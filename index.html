@@ -3,297 +3,122 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Xadrez: Evo Edition Final</title>
+<title>Xadrez</title>
 <style>
-body { font-family:sans-serif; display:flex; flex-direction:column; align-items:center; background:#1e1e2f; color:white; min-height:100vh; margin:0; }
-h1 { margin:20px 0; color:#ffcc00; text-shadow:2px 2px #000; }
-#evoSelection { display:flex; flex-direction:column; align-items:center; margin-top:20px; }
-.cards { display:flex; gap:15px; flex-wrap:wrap; justify-content:center; margin:15px 0; }
-.card { padding:15px 20px; border-radius:12px; background:#2b2b3b; border:2px solid #555; cursor:pointer; text-align:center; min-width:80px; font-weight:bold; transition:0.3s; }
-.card:hover { transform:scale(1.1); border-color:#ffcc00; box-shadow:0 0 15px #ffcc00; }
-.selectedCard { border-color:#00ff88; background-color:#44445a; box-shadow:0 0 10px #00ff88; }
-#evoInfo { margin-top:10px; font-size:14px; min-height:30px; color:#ffdd55; text-align:center; }
-button { padding:12px 25px; font-size:16px; cursor:pointer; margin-top:10px; border-radius:10px; border:none; background:linear-gradient(90deg,#ffcc00,#ffaa00); color:#000; font-weight:bold; transition:0.3s; }
-button:hover { transform:scale(1.05); background:linear-gradient(90deg,#ffaa00,#ffcc00); }
-#board { display:grid; grid-template-columns:repeat(8,60px); grid-template-rows:repeat(8,60px); margin-top:20px; border:3px solid #fff; }
-.cell { width:60px; height:60px; display:flex; justify-content:center; align-items:center; font-size:30px; cursor:pointer; user-select:none; transition:0.2s; }
-.white { background-color:#eee; color:#000; }
-.black { background-color:#444; color:#fff; }
-.move { background-color:#ffff55 !important; }
-.highlight { box-shadow:0 0 8px #00ff88 inset; }
-#info { margin-top:15px; text-align:center; font-size:16px; }
+body { background:#0d1117; color:#fff; font-family:"Poppins",sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
+h1 { margin-bottom:10px; font-size:2em; color:#58a6ff; }
+#board { display:grid; grid-template-columns:repeat(8,70px); grid-template-rows:repeat(8,70px); border:3px solid #58a6ff; box-shadow:0 0 20px #58a6ff50; }
+.square { width:70px; height:70px; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer; user-select:none; position:relative; transition: background 0.2s; }
+.light { background-color:#e0c097; }
+.dark { background-color:#7b4b25; }
+.highlight { outline:3px solid #00ffcc; }
+.possible-move { background-color: rgba(0,255,204,0.4); border-radius:50%; width:50%; height:50%; pointer-events:none; position:absolute; animation: pulse 1s infinite; }
+@keyframes pulse { 0%{transform:scale(0.8);opacity:0.7;}50%{transform:scale(1);opacity:1;}100%{transform:scale(0.8);opacity:0.7;} }
+#turn { margin-top:10px; font-size:1.2em; }
+#restart { margin-top:10px; padding:8px 16px; background-color:#58a6ff; border:none; border-radius:6px; color:#0d1117; font-weight:bold; cursor:pointer; transition:0.2s; }
+#restart:hover { background-color:#00ffcc; }
+@media(max-width:600px){#board{grid-template-columns:repeat(8,45px);grid-template-rows:repeat(8,45px);}.square{width:45px;height:45px;font-size:28px;}}
+.piece-move { transition: transform 0.3s ease; }
 </style>
 </head>
 <body>
-
-<h1>Xadrez: Evo Edition Final</h1>
-
-<div id="evoSelection">
-  <p id="playerPrompt">Escolha 2 evoluções para o jogador Branco:</p>
-  <div class="cards" id="cardsContainer"></div>
-  <div id="evoInfo"></div>
-  <button id="confirmEvo">Confirmar</button>
-</div>
-
-<div id="boardContainer" style="display:none;">
-  <div id="board"></div>
-  <div id="info">
-    <p id="turn">Turno: Branco</p>
-    <p id="selected">Peça selecionada: Nenhuma</p>
-  </div>
-</div>
+<h1>♟️ Xadrez</h1>
+<div id="board"></div>
+<div id="turn">Vez das brancas ⚪</div>
+<button id="restart">🔄 Reiniciar Partida</button>
 
 <script>
-// ===== EVOS =====
-const evolutions = ["Peão","Cavalo","Bispo","Torre","Rainha","Rei"];
-const evoDescriptions = {
-  "Peão":"Avança 2 casas ou ataca em área | Ciclos:2",
-  "Cavalo":"Salto em L | Ciclos:3",
-  "Bispo":"Troca de posição ou ataca sem se mover | Ciclos:4",
-  "Torre":"Dash em linha, para ao capturar | Ciclos:3",
-  "Rainha":"Combo em linha ou diagonal | Ciclos:4",
-  "Rei":"Protege peças ou troca de lugar | Ciclos:2"
-};
-let playerEvos = {white: [], black: []};
-let evoTurn = 'white';
-let selectedEvos = [];
+const board=document.getElementById("board"),turnText=document.getElementById("turn"),restartBtn=document.getElementById("restart");
+let selected=null,currentPlayer="white",gameOver=false;
+const initialBoard=[["♜","♞","♝","♛","♚","♝","♞","♜"],["♟","♟","♟","♟","♟","♟","♟","♟"],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["♙","♙","♙","♙","♙","♙","♙","♙"],["♖","♘","♗","♕","♔","♗","♘","♖"]];
+let boardState=JSON.parse(JSON.stringify(initialBoard));
 
-// ===== ELEMENTOS =====
-const cardsContainer = document.getElementById('cardsContainer');
-const evoInfo = document.getElementById('evoInfo');
-const playerPrompt = document.getElementById('playerPrompt');
-const confirmButton = document.getElementById('confirmEvo');
-const boardContainer = document.getElementById('boardContainer');
-const board = document.getElementById('board');
-const turnDisplay = document.getElementById('turn');
-const selectedDisplay = document.getElementById('selected');
+function getColor(piece){if(!piece) return null; return "♙♖♘♗♕♔".includes(piece)?"white":"black";}
 
-// ===== TABULEIRO =====
-let boardState = [];
-let currentPlayer = 'white';
-let selectedPiece = null;
-let skillReady = {};
-
-// ===== SETUP INICIAL =====
-const initialSetup = [
-  ['r','n','b','q','k','b','n','r'],
-  ['p','p','p','p','p','p','p','p'],
-  ['','','','','','','',''],
-  ['','','','','','','',''],
-  ['','','','','','','',''],
-  ['','','','','','','',''],
-  ['P','P','P','P','P','P','P','P'],
-  ['R','N','B','Q','K','B','N','R']
-];
-
-// ===== EVOS =====
-function showEvoCards() {
-  cardsContainer.innerHTML='';
-  evolutions.forEach(evo=>{
-    const card=document.createElement('div');
-    card.classList.add('card');
-    card.textContent=evo;
-    card.addEventListener('click', ()=>selectEvo(evo, card));
-    cardsContainer.appendChild(card);
-  });
-}
-
-function selectEvo(evo, card){
-  if(selectedEvos.includes(evo)){
-    selectedEvos = selectedEvos.filter(e=>e!==evo);
-    card.classList.remove('selectedCard');
-  } else if(selectedEvos.length<2){
-    selectedEvos.push(evo);
-    card.classList.add('selectedCard');
-  }
-  evoInfo.textContent = selectedEvos.map(e=>evoDescriptions[e]).join(' | ');
-}
-
-confirmButton.addEventListener('click', ()=>{
-  if(selectedEvos.length!==2) return alert("Escolha 2 evoluções!");
-  playerEvos[evoTurn] = [...selectedEvos];
-  selectedEvos=[];
-  evoInfo.textContent='';
-  if(evoTurn==='white'){
-    evoTurn='black';
-    playerPrompt.textContent="Escolha 2 evoluções para o jogador Preto:";
-    showEvoCards();
-  } else {
-    document.getElementById('evoSelection').style.display='none';
-    boardContainer.style.display='block';
-    createBoard();
-  }
-});
-
-// ===== TABULEIRO =====
-function createBoard(){
-  board.innerHTML='';
-  boardState = JSON.parse(JSON.stringify(initialSetup));
-  skillReady={};
-  for(let r=0;r<8;r++){
-    for(let c=0;c<8;c++){
-      const cell=document.createElement('div');
-      cell.classList.add('cell', (r+c)%2===0?'white':'black');
-      cell.dataset.row=r;
-      cell.dataset.col=c;
-      cell.textContent=boardState[r][c];
-      cell.addEventListener('click', handleCellClick);
-      board.appendChild(cell);
-      if(boardState[r][c]) skillReady[`${r}_${c}`]={ready:false, cycles:0, movedThisTurn:false};
-    }
-  }
-  currentPlayer='white';
-  turnDisplay.textContent='Turno: Branco';
-  selectedPiece=null;
-  selectedDisplay.textContent='Peça selecionada: Nenhuma';
-  clearHighlights();
-}
-
-// ===== MOVIMENTOS =====
-function isAlly(piece){ if(!piece) return false; return (currentPlayer==='white' && piece===piece.toUpperCase()) || (currentPlayer==='black' && piece===piece.toLowerCase()); }
-function isEnemy(piece){ if(!piece) return false; return (currentPlayer==='white' && piece===piece.toLowerCase()) || (currentPlayer==='black' && piece===piece.toUpperCase()); }
-function getPieceName(p){ switch(p.toUpperCase()){case 'P':return 'Peão';case 'R':return 'Torre';case 'N':return 'Cavalo';case 'B':return 'Bispo';case 'Q':return 'Rainha';case 'K':return 'Rei';default:return 'Desconhecido';} }
-
-function handleCellClick(e){
-  const r=parseInt(e.currentTarget.dataset.row);
-  const c=parseInt(e.currentTarget.dataset.col);
-  const piece=boardState[r][c];
-
-  if(selectedPiece && e.currentTarget.classList.contains('move')){
-    movePiece(r,c);
-    return;
-  }
-
-  if(piece && isAlly(piece)){
-    selectedPiece={row:r,col:c,piece:piece};
-    selectedDisplay.textContent=`Peça selecionada: ${getPieceName(piece)}`;
-    showPossibleMoves(r,c);
-  } else {
-    clearHighlights();
-    selectedPiece=null;
-    selectedDisplay.textContent='Peça selecionada: Nenhuma';
-  }
-}
-
-function movePiece(r,c){
-  const oldR=selectedPiece.row;
-  const oldC=selectedPiece.col;
-  const target=boardState[r][c];
-
-  if(target && target.toUpperCase()==='K'){
-    alert(`${currentPlayer.charAt(0).toUpperCase()+currentPlayer.slice(1)} venceu!`);
-    createBoard();
-    return;
-  }
-
-  boardState[r][c]=selectedPiece.piece;
-  boardState[oldR][oldC]='';
-  updateBoard();
-  selectedPiece=null;
-  selectedDisplay.textContent='Peça selecionada: Nenhuma';
-  switchTurn();
-}
-
-function updateBoard(){
-  for(let r=0;r<8;r++){
-    for(let c=0;c<8;c++){
-      board.children[r*8+c].textContent = boardState[r][c];
+function renderBoard(){
+  board.innerHTML="";
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      const square=document.createElement("div");
+      square.classList.add("square",(i+j)%2===0?"light":"dark");
+      square.dataset.row=i;
+      square.dataset.col=j;
+      const piece=boardState[i][j];
+      if(piece){
+        const span=document.createElement("span");
+        span.textContent=piece;
+        span.classList.add("piece-move");
+        square.appendChild(span);
+      }
+      square.onclick=()=>handleClick(i,j);
+      board.appendChild(square);
     }
   }
 }
 
-function showPossibleMoves(r,c){
-  clearHighlights();
-  const piece=boardState[r][c];
-  const type=piece.toUpperCase();
-  let moves=[];
-  const color = piece===piece.toUpperCase()?'white':'black';
-  const isEvo = playerEvos[color].includes(getPieceName(piece));
-
-  if(type==='P'){ 
-    const dir = piece===piece.toUpperCase()? -1:1;
-    // Avanço 1 casa
-    if(r+dir>=0 && r+dir<8 && !boardState[r+dir][c]) moves.push([r+dir,c]);
-    // Avanço 2 casas no início
-    if((r===6 && color==='white')||(r===1 && color==='black')){
-      if(!boardState[r+dir][c] && !boardState[r+dir*2][c]) moves.push([r+dir*2,c]);
-    }
-    // Captura diagonal
-    [[1,1],[1,-1]].forEach(d=>{
-      const nr=r+dir, nc=c+d[1];
-      if(nr>=0 && nr<8 && nc>=0 && nc<8 && isEnemy(boardState[nr][nc])) moves.push([nr,nc]);
-    });
-  } else if(type==='N'){
-    const dirs=[[2,1],[1,2],[-1,2],[-2,1],[-2,-1],[-1,-2],[1,-2],[2,-1]];
-    dirs.forEach(d=>{const nr=r+d[0], nc=c+d[1]; if(nr>=0 && nr<8 && nc>=0 && nc<8 && !isAlly(boardState[nr][nc])) moves.push([nr,nc]);});
-  } else if(type==='B'){
-    const dirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
-    dirs.forEach(d=>{
-      let nr=r+d[0], nc=c+d[1];
-      while(nr>=0 && nr<8 && nc>=0 && nc<8){
-        if(isAlly(boardState[nr][nc])) break;
-        moves.push([nr,nc]);
-        if(isEnemy(boardState[nr][nc])) break;
-        nr+=d[0]; nc+=d[1];
-      }
-    });
-  } else if(type==='R'){
-    const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
-    dirs.forEach(d=>{
-      let nr=r+d[0], nc=c+d[1];
-      while(nr>=0 && nr<8 && nc>=0 && nc<8){
-        if(isAlly(boardState[nr][nc])) break;
-        moves.push([nr,nc]);
-        if(isEnemy(boardState[nr][nc])) break;
-        nr+=d[0]; nc+=d[1];
-      }
-    });
-  } else if(type==='Q'){
-    const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-    dirs.forEach(d=>{
-      let nr=r+d[0], nc=c+d[1];
-      while(nr>=0 && nr<8 && nc>=0 && nc<8){
-        if(isAlly(boardState[nr][nc])) break;
-        moves.push([nr,nc]);
-        if(isEnemy(boardState[nr][nc])) break;
-        nr+=d[0]; nc+=d[1];
-      }
-    });
-  } else if(type==='K'){
-    const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-    dirs.forEach(d=>{
-      const nr=r+d[0], nc=c+d[1];
-      if(nr>=0 && nr<8 && nc>=0 && nc<8 && !isAlly(boardState[nr][nc])){
-        moves.push([nr,nc]);
-      }
+function handleClick(row,col){
+  if(gameOver)return;
+  const piece=boardState[row][col];
+  if(selected){
+    const [sr,sc]=selected;
+    if(isValidMove(sr,sc,row,col)){
+      const target=boardState[row][col];
+      const pieceColor=getColor(boardState[sr][sc]);
+      const targetColor=getColor(target);
+      if(targetColor===pieceColor)return;
+      if(target==="♚"||target==="♔"){alert(`${currentPlayer==="white"?"Brancas ⚪":"Pretas ⚫"} venceram!`); gameOver=true;}
+      // animação
+      const movingPiece=board.children[sr*8+sc].querySelector(".piece-move");
+      if(movingPiece){board.children[row*8+col].appendChild(movingPiece);}
+      boardState[row][col]=boardState[sr][sc];
+      boardState[sr][sc]="";
+      selected=null;
+      currentPlayer=currentPlayer==="white"?"black":"white";
+      turnText.textContent=`Vez das ${currentPlayer==="white"?"brancas ⚪":"pretas ⚫"}`;
+      renderBoard();
+    } else {selected=null; renderBoard();}
+  } else if(piece && ((currentPlayer==="white"&&getColor(piece)==="white")||(currentPlayer==="black"&&getColor(piece)==="black"))){
+    selected=[row,col];
+    document.querySelectorAll(".square").forEach(sq=>sq.classList.remove("highlight"));
+    const moves=getMoves(row,col);
+    moves.forEach(m=>{
+      const targetSquare=board.children[m[0]*8+m[1]];
+      const dot=document.createElement("div");
+      dot.classList.add("possible-move");
+      targetSquare.appendChild(dot);
     });
   }
-
-  // Highlight das casas possíveis
-  moves.forEach(m=>{
-    const idx=m[0]*8+m[1];
-    board.children[idx].classList.add('move');
-    if(isEvo) board.children[idx].classList.add('highlight');
-  });
 }
 
-function clearHighlights(){
-  for(let cell of board.children){
-    cell.classList.remove('move','highlight');
+function isValidMove(sr,sc,tr,tc){
+  if(sr===tr && sc===tc) return false;
+  const piece=boardState[sr][sc];
+  const target=boardState[tr][tc];
+  const pieceColor=getColor(piece);
+  const targetColor=getColor(target);
+  if(targetColor===pieceColor) return false;
+  const dr=tr-sr,dc=tc-sc;
+  switch(piece){
+    case"♙":if(dc===0&&!target&&((dr===-1)||(dr===-2&&sr===6&&!boardState[sr-1][sc])))return true;
+             if(Math.abs(dc)===1&&dr===-1&&targetColor==="black")return true; break;
+    case"♟":if(dc===0&&!target&&((dr===1)||(dr===2&&sr===1&&!boardState[sr+1][sc])))return true;
+             if(Math.abs(dc)===1&&dr===1&&targetColor==="white")return true; break;
+    case"♖": case"♜": if(sr===tr||sc===tc) return clearPath(sr,sc,tr,tc); break;
+    case"♗": case"♝": if(Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♕": case"♛": if(sr===tr||sc===tc||Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♘": case"♞": if((Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2)) return true; break;
+    case"♔": case"♚": if(Math.abs(dr)<=1&&Math.abs(dc)<=1) return true; break;
   }
+  return false;
 }
 
-function switchTurn(){
-  currentPlayer = currentPlayer==='white'?'black':'white';
-  turnDisplay.textContent = `Turno: ${currentPlayer.charAt(0).toUpperCase()+currentPlayer.slice(1)}`;
-  selectedPiece=null;
-  selectedDisplay.textContent='Peça selecionada: Nenhuma';
-  clearHighlights();
-}
+function clearPath(sr,sc,tr,tc){const stepR=Math.sign(tr-sr),stepC=Math.sign(tc-sc);let r=sr+stepR,c=sc+stepC;while(r!==tr||c!==tc){if(boardState[r][c])return false;r+=stepR;c+=stepC;}return true;}
 
-// Inicia seleção de EVOS
-showEvoCards();
+function getMoves(r,c){const moves=[];for(let i=0;i<8;i++){for(let j=0;j<8;j++){if(isValidMove(r,c,i,j))moves.push([i,j]);}}return moves;}
+
+restartBtn.onclick=()=>{boardState=JSON.parse(JSON.stringify(initialBoard)); currentPlayer="white"; gameOver=false; turnText.textContent=`Vez das brancas ⚪`; renderBoard();}
+
+renderBoard();
 </script>
-
 </body>
 </html>
