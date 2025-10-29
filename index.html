@@ -17,6 +17,28 @@ h1 { margin-bottom:10px; font-size:2em; color:#58a6ff; }
 #turn { margin-top:10px; font-size:1.2em; }
 #restart { margin-top:10px; padding:8px 16px; background-color:#58a6ff; border:none; border-radius:6px; color:#0d1117; font-weight:bold; cursor:pointer; transition:0.2s; }
 #restart:hover { background-color:#00ffcc; }
+#promotion {
+  display:none;
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background:#161b22;
+  border:2px solid #58a6ff;
+  border-radius:10px;
+  padding:15px;
+  box-shadow:0 0 20px #58a6ff90;
+  text-align:center;
+}
+#promotion button {
+  font-size:30px;
+  margin:5px;
+  cursor:pointer;
+  background:none;
+  border:none;
+  color:#fff;
+  transition:transform 0.2s;
+}
+#promotion button:hover { transform:scale(1.2); color:#00ffcc; }
 @media(max-width:600px){#board{grid-template-columns:repeat(8,45px);grid-template-rows:repeat(8,45px);}.square{width:45px;height:45px;font-size:28px;}}
 .piece-move { transition: transform 0.3s ease; }
 </style>
@@ -27,13 +49,36 @@ h1 { margin-bottom:10px; font-size:2em; color:#58a6ff; }
 <div id="turn">Vez das brancas ⚪</div>
 <button id="restart">🔄 Reiniciar Partida</button>
 
+<div id="promotion">
+  <h3>Escolha a peça para promoção</h3>
+  <div id="promoButtons"></div>
+</div>
+
 <script>
-const board=document.getElementById("board"),turnText=document.getElementById("turn"),restartBtn=document.getElementById("restart");
-let selected=null,currentPlayer="white",gameOver=false;
-const initialBoard=[["♜","♞","♝","♛","♚","♝","♞","♜"],["♟","♟","♟","♟","♟","♟","♟","♟"],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["♙","♙","♙","♙","♙","♙","♙","♙"],["♖","♘","♗","♕","♔","♗","♘","♖"]];
+const board=document.getElementById("board"),
+turnText=document.getElementById("turn"),
+restartBtn=document.getElementById("restart"),
+promotionDiv=document.getElementById("promotion"),
+promoButtons=document.getElementById("promoButtons");
+
+let selected=null,currentPlayer="white",gameOver=false,promoPos=null;
+
+const initialBoard=[
+  ["♜","♞","♝","♛","♚","♝","♞","♜"],
+  ["♟","♟","♟","♟","♟","♟","♟","♟"],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["♙","♙","♙","♙","♙","♙","♙","♙"],
+  ["♖","♘","♗","♕","♔","♗","♘","♖"]
+];
 let boardState=JSON.parse(JSON.stringify(initialBoard));
 
-function getColor(piece){if(!piece) return null; return "♙♖♘♗♕♔".includes(piece)?"white":"black";}
+function getColor(piece){
+  if(!piece) return null;
+  return "♙♖♘♗♕♔".includes(piece)?"white":"black";
+}
 
 function renderBoard(){
   board.innerHTML="";
@@ -66,18 +111,26 @@ function handleClick(row,col){
       const pieceColor=getColor(boardState[sr][sc]);
       const targetColor=getColor(target);
       if(targetColor===pieceColor)return;
-      if(target==="♚"||target==="♔"){alert(`${currentPlayer==="white"?"Brancas ⚪":"Pretas ⚫"} venceram!`); gameOver=true;}
-      // animação
-      const movingPiece=board.children[sr*8+sc].querySelector(".piece-move");
-      if(movingPiece){board.children[row*8+col].appendChild(movingPiece);}
+      if(target==="♚"||target==="♔"){
+        alert(`${currentPlayer==="white"?"Brancas ⚪":"Pretas ⚫"} venceram!`);
+        gameOver=true;
+      }
       boardState[row][col]=boardState[sr][sc];
       boardState[sr][sc]="";
+      
+      // Promoção
+      if((boardState[row][col]==="♙"&&row===0)||(boardState[row][col]==="♟"&&row===7)){
+        promoPos=[row,col];
+        openPromotion(boardState[row][col]);
+        return;
+      }
+
       selected=null;
       currentPlayer=currentPlayer==="white"?"black":"white";
       turnText.textContent=`Vez das ${currentPlayer==="white"?"brancas ⚪":"pretas ⚫"}`;
       renderBoard();
     } else {selected=null; renderBoard();}
-  } else if(piece && ((currentPlayer==="white"&&getColor(piece)==="white")||(currentPlayer==="black"&&getColor(piece)==="black"))){
+  } else if(piece && getColor(piece)===currentPlayer){
     selected=[row,col];
     document.querySelectorAll(".square").forEach(sq=>sq.classList.remove("highlight"));
     const moves=getMoves(row,col);
@@ -88,6 +141,26 @@ function handleClick(row,col){
       targetSquare.appendChild(dot);
     });
   }
+}
+
+function openPromotion(piece){
+  promotionDiv.style.display="block";
+  promoButtons.innerHTML="";
+  const isWhite=getColor(piece)==="white";
+  const options=isWhite?["♕","♖","♗","♘"]:["♛","♜","♝","♞"];
+  options.forEach(opt=>{
+    const btn=document.createElement("button");
+    btn.textContent=opt;
+    btn.onclick=()=>{
+      boardState[promoPos[0]][promoPos[1]]=opt;
+      promotionDiv.style.display="none";
+      promoPos=null;
+      currentPlayer=currentPlayer==="white"?"black":"white";
+      turnText.textContent=`Vez das ${currentPlayer==="white"?"brancas ⚪":"pretas ⚫"}`;
+      renderBoard();
+    };
+    promoButtons.appendChild(btn);
+  });
 }
 
 function isValidMove(sr,sc,tr,tc){
@@ -112,11 +185,33 @@ function isValidMove(sr,sc,tr,tc){
   return false;
 }
 
-function clearPath(sr,sc,tr,tc){const stepR=Math.sign(tr-sr),stepC=Math.sign(tc-sc);let r=sr+stepR,c=sc+stepC;while(r!==tr||c!==tc){if(boardState[r][c])return false;r+=stepR;c+=stepC;}return true;}
+function clearPath(sr,sc,tr,tc){
+  const stepR=Math.sign(tr-sr),stepC=Math.sign(tc-sc);
+  let r=sr+stepR,c=sc+stepC;
+  while(r!==tr||c!==tc){
+    if(boardState[r][c])return false;
+    r+=stepR;c+=stepC;
+  }
+  return true;
+}
 
-function getMoves(r,c){const moves=[];for(let i=0;i<8;i++){for(let j=0;j<8;j++){if(isValidMove(r,c,i,j))moves.push([i,j]);}}return moves;}
+function getMoves(r,c){
+  const moves=[];
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      if(isValidMove(r,c,i,j))moves.push([i,j]);
+    }
+  }
+  return moves;
+}
 
-restartBtn.onclick=()=>{boardState=JSON.parse(JSON.stringify(initialBoard)); currentPlayer="white"; gameOver=false; turnText.textContent=`Vez das brancas ⚪`; renderBoard();}
+restartBtn.onclick=()=>{
+  boardState=JSON.parse(JSON.stringify(initialBoard));
+  currentPlayer="white";
+  gameOver=false;
+  turnText.textContent=`Vez das brancas ⚪`;
+  renderBoard();
+};
 
 renderBoard();
 </script>
