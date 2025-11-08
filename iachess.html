@@ -128,7 +128,6 @@
     filter: brightness(1.1);
   }
 
-  /* Cores estilo Chess.com */
   .light {
     background-color: #eeeed2;
   }
@@ -166,6 +165,15 @@
     border: 4px solid rgba(0, 0, 0, 0.2);
     border-radius: 50%;
     pointer-events: none;
+  }
+
+  .cannon-launch::after {
+    content: "🚀";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 16px;
+    animation: pulse 1.8s infinite;
   }
 
   @keyframes pulse {
@@ -460,13 +468,14 @@ if (hasCannon) {
 
 equipBtn.onclick = () => {
   if (!cannonEquipped) {
-    boardState[6][0] = "🧨";
+    // Canhão substitui a torre na posição inicial
+    boardState[7][0] = "🧨";
     cannonEquipped = true;
     equipBtn.disabled = true;
     equipBtn.textContent = "✓ Equipado";
     equipBtn.style.opacity = "0.6";
     renderBoard();
-    alert("🧨 Canhão equipado!");
+    alert("🧨 Canhão equipado! Move-se como torre e pode lançar peões adjacentes 3 casas à frente!");
   }
 };
 
@@ -497,16 +506,14 @@ function stopTimer() {
 
 // Calcular moedas bônus baseado no tempo
 function calculateCoinBonus(seconds) {
-  // Menos tempo = mais moedas
-  // Fórmula: Base 10 moedas + bônus por velocidade
   const baseCoins = 10;
   let bonus = 0;
   
-  if (seconds < 60) bonus = 50; // Menos de 1 min
-  else if (seconds < 120) bonus = 40; // Menos de 2 min
-  else if (seconds < 180) bonus = 30; // Menos de 3 min
-  else if (seconds < 300) bonus = 20; // Menos de 5 min
-  else if (seconds < 600) bonus = 10; // Menos de 10 min
+  if (seconds < 60) bonus = 50;
+  else if (seconds < 120) bonus = 40;
+  else if (seconds < 180) bonus = 30;
+  else if (seconds < 300) bonus = 20;
+  else if (seconds < 600) bonus = 10;
   
   return baseCoins + bonus;
 }
@@ -530,6 +537,19 @@ function getColor(piece) {
   return "♙♖♘♗♕♔🧨".includes(piece) ? "white" : "black";
 }
 
+function getPieceValue(piece) {
+  const values = {
+    "♙": 1, "♟": 1,
+    "♘": 3, "♞": 3,
+    "♗": 3, "♝": 3,
+    "♖": 5, "♜": 5,
+    "🧨": 6,
+    "♕": 9, "♛": 9,
+    "♔": 1000, "♚": 1000
+  };
+  return values[piece] || 0;
+}
+
 function renderBoard() {
   board.innerHTML = "";
   
@@ -547,12 +567,10 @@ function renderBoard() {
         sq.appendChild(span);
       }
 
-      // Verificar xeque
       if (piece === "♚" || piece === "♔") {
         checkKingInDanger(i, j, sq);
       }
 
-      // Highlight do último movimento
       if (lastMove && ((lastMove.from[0] === i && lastMove.from[1] === j) || 
           (lastMove.to[0] === i && lastMove.to[1] === j))) {
         sq.classList.add("last-move");
@@ -576,11 +594,38 @@ function isSquareThreatened(r, c, color) {
     for (let j = 0; j < 8; j++) {
       const p = boardState[i][j];
       if (p && getColor(p) !== color) {
-        if (isValidMove(i, j, r, c)) return true;
+        if (isValidMove(i, j, r, c, false)) return true;
       }
     }
   }
   return false;
+}
+
+function isKingInCheck(color) {
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const piece = boardState[i][j];
+      if ((piece === "♔" && color === "white") || (piece === "♚" && color === "black")) {
+        return isSquareThreatened(i, j, color);
+      }
+    }
+  }
+  return false;
+}
+
+function wouldMoveCauseCheck(sr, sc, tr, tc, color) {
+  const originalPiece = boardState[tr][tc];
+  const movingPiece = boardState[sr][sc];
+  
+  boardState[tr][tc] = movingPiece;
+  boardState[sr][sc] = "";
+  
+  const inCheck = isKingInCheck(color);
+  
+  boardState[sr][sc] = movingPiece;
+  boardState[tr][tc] = originalPiece;
+  
+  return inCheck;
 }
 
 function handleClick(row, col) {
@@ -590,7 +635,7 @@ function handleClick(row, col) {
   
   if (selected) {
     const [sr, sc] = selected;
-    if (isValidMove(sr, sc, row, col)) {
+    if (isValidMove(sr, sc, row, col, true)) {
       movePiece(sr, sc, row, col);
       selected = null;
       
@@ -616,9 +661,13 @@ function handleClick(row, col) {
       const dot = document.createElement("div");
       dot.classList.add("possible-move");
       
-      // Marcar capturas
       if (boardState[m[0]][m[1]]) {
         dot.classList.add("possible-capture");
+      }
+      
+      // Marcar lançamento de canhão
+      if (m[2] === "cannonLaunch") {
+        dot.classList.add("cannon-launch");
       }
       
       sq.appendChild(dot);
@@ -629,7 +678,6 @@ function handleClick(row, col) {
 function movePiece(sr, sc, tr, tc) {
   const target = boardState[tr][tc];
   
-  // Verificar captura do rei
   if (target === "♚" || target === "♔") {
     gameOver = true;
     stopTimer();
@@ -641,7 +689,6 @@ function movePiece(sr, sc, tr, tc) {
   boardState[tr][tc] = boardState[sr][sc];
   boardState[sr][sc] = "";
 
-  // Verificar promoção
   if ((boardState[tr][tc] === "♙" && tr === 0) || (boardState[tr][tc] === "♟" && tr === 7)) {
     promoPos = [tr, tc];
     openPromotion(boardState[tr][tc]);
@@ -680,7 +727,7 @@ function openPromotion(piece) {
   });
 }
 
-function isValidMove(sr, sc, tr, tc) {
+function isValidMove(sr, sc, tr, tc, checkKing = true) {
   if (sr === tr && sc === tc) return false;
   
   const piece = boardState[sr][sc];
@@ -689,6 +736,10 @@ function isValidMove(sr, sc, tr, tc) {
   const targetColor = getColor(target);
   
   if (targetColor === pieceColor) return false;
+  
+  if (checkKing && wouldMoveCauseCheck(sr, sc, tr, tc, pieceColor)) {
+    return false;
+  }
   
   const dr = tr - sr;
   const dc = tc - sc;
@@ -730,8 +781,8 @@ function isValidMove(sr, sc, tr, tc) {
       break;
       
     case "🧨":
-      if (sr === tr && Math.abs(dc) <= 2 && !target) return clearPath(sr, sc, tr, tc);
-      if (Math.abs(dc) <= 1 && dr === -1 && targetColor === "black") return true;
+      // Canhão move como torre
+      if (sr === tr || sc === tc) return clearPath(sr, sc, tr, tc);
       break;
   }
   
@@ -753,14 +804,114 @@ function clearPath(sr, sc, tr, tc) {
   return true;
 }
 
-function getMoves(r, c) {
-  const moves = [];
-  for (let i = 0; i < 8; i++) {
-    for (let j = 0; j < 8; j++) {
-      if (isValidMove(r, c, i, j)) moves.push([i, j]);
+function canCannonLaunchPawn(cannonRow, cannonCol, pawnRow, pawnCol) {
+  // Canhão deve estar ao lado do peão (mesma linha, colunas adjacentes)
+  if (cannonRow === pawnRow && Math.abs(cannonCol - pawnCol) === 1) {
+    const pawn = boardState[pawnRow][pawnCol];
+    const cannon = boardState[cannonRow][cannonCol];
+    
+    // Ambos devem ser brancos
+    if (getColor(pawn) === "white" && getColor(cannon) === "white") {
+      // Peão pode ser lançado 3 casas à frente
+      if (pawn === "♙") {
+        const targetRow = pawnRow - 3;
+        if (targetRow >= 0 && !boardState[targetRow][pawnCol] && 
+            !boardState[pawnRow - 1][pawnCol] && !boardState[pawnRow - 2][pawnCol]) {
+          return true;
+        }
+      }
     }
   }
+  return false;
+}
+
+function getMoves(r, c) {
+  const moves = [];
+  const piece = boardState[r][c];
+  
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      if (isValidMove(r, c, i, j, true)) {
+        moves.push([i, j]);
+      }
+    }
+  }
+  
+  // Adicionar lançamento de canhão se aplicável
+  if (piece === "🧨") {
+    for (let j = 0; j < 8; j++) {
+      const adjacentPiece = boardState[r][j];
+      if (adjacentPiece === "♙" && canCannonLaunchPawn(r, c, r, j)) {
+        const targetRow = r - 3;
+        moves.push([targetRow, j, "cannonLaunch"]);
+      }
+    }
+  }
+  
+  // Se uma peça está ao lado do canhão
+  if (piece === "♙") {
+    // Verificar se há um canhão adjacente
+    const adjacentPositions = [[r, c-1], [r, c+1]];
+    for (let [ar, ac] of adjacentPositions) {
+      if (ac >= 0 && ac < 8 && boardState[ar][ac] === "🧨") {
+        if (canCannonLaunchPawn(ar, ac, r, c)) {
+          const targetRow = r - 3;
+          moves.push([targetRow, c, "cannonLaunch"]);
+          break;
+        }
+      }
+    }
+  }
+  
   return moves;
+}
+
+function evaluateMove(move) {
+  const { from, to } = move;
+  const [sr, sc] = from;
+  const [tr, tc] = to;
+  
+  let score = 0;
+  
+  const target = boardState[tr][tc];
+  if (target) {
+    score += getPieceValue(target) * 10;
+  }
+  
+  // Penalizar se deixar o rei em xeque
+  if (wouldMoveCauseCheck(sr, sc, tr, tc, "black")) {
+    score -= 1000;
+  }
+  
+  // Bonificar se escapar de xeque
+  if (isKingInCheck("black") && !wouldMoveCauseCheck(sr, sc, tr, tc, "black")) {
+    score += 500;
+  }
+  
+  // Bonificar avanço de peões
+  if (boardState[sr][sc] === "♟" && tr > sr) {
+    score += (tr - sr) * 2;
+  }
+  
+  // Bonificar controle do centro
+  if ((tr === 3 || tr === 4) && (tc >= 2 && tc <= 5)) {
+    score += 5;
+  }
+  
+  // Verificar se a peça ficaria ameaçada após o movimento
+  const originalPiece = boardState[tr][tc];
+  const movingPiece = boardState[sr][sc];
+  boardState[tr][tc] = movingPiece;
+  boardState[sr][sc] = "";
+  
+  if (isSquareThreatened(tr, tc, "black")) {
+    score -= getPieceValue(movingPiece) * 5;
+  }
+  
+  boardState[sr][sc] = movingPiece;
+  boardState[tr][tc] = originalPiece;
+  
+  return score;
 }
 
 function aiMove() {
@@ -772,7 +923,14 @@ function aiMove() {
       const p = boardState[i][j];
       if (p && getColor(p) === "black") {
         const ms = getMoves(i, j);
-        ms.forEach(mv => moves.push({ from: [i, j], to: mv, piece: p }));
+        ms.forEach(mv => {
+          moves.push({ 
+            from: [i, j], 
+            to: [mv[0], mv[1]], 
+            piece: p,
+            score: 0
+          });
+        });
       }
     }
   }
@@ -783,19 +941,23 @@ function aiMove() {
     return;
   }
 
-  // Priorizar capturas
-  let bestMoves = moves.filter(mv => {
-    const t = boardState[mv.to[0]][mv.to[1]];
-    return t && getColor(t) === "white";
+  // Avaliar todos os movimentos
+  moves.forEach(move => {
+    move.score = evaluateMove(move);
   });
   
-  if (bestMoves.length === 0) {
-    bestMoves = moves.filter(mv => boardState[mv.from[0]][mv.from[1]] === "♟" && mv.to[0] > mv.from[0]);
-  }
+  // Ordenar por pontuação (maior primeiro)
+  moves.sort((a, b) => b.score - a.score);
   
-  if (bestMoves.length === 0) bestMoves = moves;
-
-  const choice = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  // Filtrar movimentos que não causam xeque no próprio rei
+  const safeMoves = moves.filter(mv => mv.score > -900);
+  
+  const bestMoves = safeMoves.length > 0 ? safeMoves : moves;
+  
+  // Escolher entre os 3 melhores movimentos (adiciona variação)
+  const topMoves = bestMoves.slice(0, Math.min(3, bestMoves.length));
+  const choice = topMoves[Math.floor(Math.random() * topMoves.length)];
+  
   movePiece(choice.from[0], choice.from[1], choice.to[0], choice.to[1]);
   
   if (!gameOver && !promoPos) {
