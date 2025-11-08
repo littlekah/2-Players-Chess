@@ -35,44 +35,14 @@
     transition: 0.3s;
   }
   button:hover { transform: scale(1.08); background: linear-gradient(90deg, #00aaff, #0077cc); }
-  #devMsg {
-    color: #ffcc00;
-    margin-top: 10px;
-    display: none;
-    animation: fade 0.5s ease-in-out;
-  }
+  #devMsg { color: #ffcc00; margin-top: 10px; display: none; animation: fade 0.5s ease-in-out; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-  .menu-box {
-    margin-top: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  .leaderboard, .shop {
-    background: #141414;
-    border-radius: 15px;
-    padding: 20px;
-    width: 300px;
-    margin-top: 20px;
-  }
+  .menu-box { margin-top: 30px; display: flex; flex-direction: column; align-items: center; }
+  .leaderboard, .shop { background: #141414; border-radius: 15px; padding: 20px; width: 300px; margin-top: 20px; }
   .leaderboard h2, .shop h2 { text-align: center; color: #00ffcc; }
-  .player-entry {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #333;
-    padding: 5px 0;
-  }
-  .item {
-    background: #1e1e1e;
-    border-radius: 10px;
-    padding: 10px;
-    margin: 8px 0;
-  }
-  .item button {
-    background: linear-gradient(90deg, #28a745, #218838);
-    margin-top: 5px;
-  }
+  .player-entry { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding: 5px 0; }
+  .item { background: #1e1e1e; border-radius: 10px; padding: 10px; margin: 8px 0; }
+  .item button { background: linear-gradient(90deg, #28a745, #218838); margin-top: 5px; }
 </style>
 </head>
 <body>
@@ -98,19 +68,18 @@
 </div>
 
 <div class="leaderboard">
-  <h2>🏆 Top 10 Elo</h2>
+  <h2>🏆 Top 10 Global</h2>
   <div id="leaderboardList"></div>
 </div>
 
 <script>
-// Checar usuário logado
 const user = localStorage.getItem("currentUser");
 if (!user) window.location.href = "index.html";
 
 let players = JSON.parse(localStorage.getItem("players")) || {};
 let current = players[user];
 
-// Mostrar stats
+// Mostrar dados do jogador logado
 document.getElementById("username").textContent = user;
 document.getElementById("coins").textContent = current.coins;
 document.getElementById("elo").textContent = current.elo;
@@ -138,21 +107,19 @@ shopData.forEach(item => {
 function buyItem(id, price) {
   if (current.coins < price) return alert("Moedas insuficientes!");
   if (current.inventory.includes(id)) return alert("Você já possui este item!");
-
   current.coins -= price;
   current.inventory.push(id);
   players[user] = current;
   localStorage.setItem("players", JSON.stringify(players));
-
   document.getElementById("coins").textContent = current.coins;
   alert("Item comprado com sucesso! 🎉");
 }
 
-// Top 10 Elo
+// Top 10 Global
 function updateLeaderboard() {
-  let allPlayers = JSON.parse(localStorage.getItem("players")) || {};
-  let topPlayers = Object.entries(allPlayers)
-    .map(([name, data]) => ({ name, elo: data.elo }))
+  // Ordenar todos os jogadores pelo ELO (decrescente)
+  const topPlayers = Object.values(players)
+    .map(p => ({ ...p }))
     .sort((a, b) => b.elo - a.elo)
     .slice(0, 10);
 
@@ -160,9 +127,11 @@ function updateLeaderboard() {
   lbContainer.innerHTML = "";
 
   topPlayers.forEach((p, i) => {
+    // Mostrar o nome do jogador correto
+    let playerName = Object.keys(players).find(name => players[name] === p) || "???";
     const div = document.createElement("div");
     div.className = "player-entry";
-    div.innerHTML = `<span>${i + 1}. ${p.name}</span><span>${p.elo}</span>`;
+    div.innerHTML = `<span>${i + 1}. ${playerName}</span><span>${p.elo}</span>`;
     lbContainer.appendChild(div);
   });
 }
