@@ -4,174 +4,510 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chess Ult - IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-body { font-family:"Poppins",sans-serif; background:#0b0b0b; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; }
-h1 { color:#7ab800; margin-bottom:10px; }
-#board { display:grid; grid-template-columns:repeat(8,70px); grid-template-rows:repeat(8,70px); border:3px solid #7ab800; box-shadow:0 0 15px #7ab80070; }
-.square { width:70px; height:70px; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer; user-select:none; position:relative; transition:0.2s; }
-.light { background-color:#8a9a5b; }
-.dark { background-color:#4a5b33; }
-.highlight { outline:3px solid #00ffcc; }
-.possible-move { background-color: rgba(0,255,204,0.5); border-radius:50%; width:50%; height:50%; pointer-events:none; position:absolute; animation: pulse 1s infinite; }
-@keyframes pulse { 0%{transform:scale(0.8);opacity:0.7;}50%{transform:scale(1);opacity:1;}100%{transform:scale(0.8);opacity:0.7;} }
-.last-move { background-color: rgba(255,255,0,0.3); }
-#turn { margin-top:10px; font-size:1.2em; }
-#equipCannon, #restart { margin-top:10px; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s; }
-#equipCannon { background:#ff4747; color:#fff; display:none; }
-#equipCannon:hover { background:#ff7070; }
-#restart { background:#7ab800; color:#0b0b0b; }
-#restart:hover { background:#aaff00; }
-#promotion, #victoryModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#111; border:2px solid #7ab800; border-radius:10px; padding:15px; text-align:center; box-shadow:0 0 20px #7ab80090; z-index:100; }
-#promotion button, #victoryModal button { font-size:24px; margin:5px; cursor:pointer; background:none; border:none; color:#fff; transition:0.2s; }
-#promotion button:hover, #victoryModal button:hover { transform:scale(1.2); color:#00ffcc; }
-/* Peças mais escuras */
-.square span { color:#1b1b1b; font-weight:bold; }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(180deg, #0b0b0b, #1a1a1a);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    color: #7ab800;
+    margin-bottom: 20px;
+    font-size: 2.2em;
+    text-shadow: 0 0 20px rgba(122, 184, 0, 0.5);
+    font-weight: 700;
+  }
+
+  .game-info {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 70px);
+    grid-template-rows: repeat(8, 70px);
+    border: 4px solid #7ab800;
+    box-shadow: 0 0 25px rgba(122, 184, 0, 0.6);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .square {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 42px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .square:hover {
+    filter: brightness(1.15);
+  }
+
+  .light {
+    background-color: #8a9a5b;
+  }
+
+  .dark {
+    background-color: #4a5b33;
+  }
+
+  .highlight {
+    box-shadow: inset 0 0 0 3px #00ffcc;
+    animation: highlightPulse 1s infinite;
+  }
+
+  @keyframes highlightPulse {
+    0%, 100% { box-shadow: inset 0 0 0 3px #00ffcc; }
+    50% { box-shadow: inset 0 0 0 3px #00ff99; }
+  }
+
+  .possible-move {
+    background-color: rgba(0, 255, 204, 0.6);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+    position: absolute;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.8);
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0.7; }
+  }
+
+  .last-move {
+    background-color: rgba(255, 255, 0, 0.35) !important;
+    box-shadow: inset 0 0 15px rgba(255, 255, 0, 0.3);
+  }
+
+  .square span {
+    color: #1b1b1b;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+  }
+
+  .king-in-check {
+    outline: 4px solid #ff3333 !important;
+    animation: checkBlink 0.8s infinite;
+  }
+
+  @keyframes checkBlink {
+    0%, 100% { outline-color: #ff3333; }
+    50% { outline-color: #ff6666; }
+  }
+
+  #turn {
+    margin-top: 15px;
+    font-size: 1.3em;
+    font-weight: 600;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    border-radius: 10px;
+    border: 1px solid #333;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .button-container {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    font-family: "Poppins", sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  #equipCannon {
+    background: linear-gradient(90deg, #ff4747, #cc0000);
+    color: #fff;
+    display: none;
+  }
+
+  #equipCannon:hover {
+    background: linear-gradient(90deg, #ff6666, #ff0000);
+  }
+
+  #restart {
+    background: linear-gradient(90deg, #7ab800, #5a8800);
+    color: #fff;
+  }
+
+  #restart:hover {
+    background: linear-gradient(90deg, #aaff00, #7ab800);
+  }
+
+  #backToMenu {
+    background: linear-gradient(90deg, #555, #333);
+    color: #fff;
+  }
+
+  #backToMenu:hover {
+    background: linear-gradient(90deg, #777, #555);
+  }
+
+  #promotion, #victoryModal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+    border: 3px solid #7ab800;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(122, 184, 0, 0.7);
+    z-index: 100;
+    min-width: 300px;
+  }
+
+  #promotion h3, #victoryModal h2 {
+    color: #7ab800;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+  }
+
+  #promotion button, #victoryModal button {
+    font-size: 32px;
+    margin: 10px;
+    cursor: pointer;
+    background: rgba(122, 184, 0, 0.1);
+    border: 2px solid #555;
+    border-radius: 10px;
+    color: #fff;
+    padding: 15px 20px;
+    transition: all 0.3s ease;
+  }
+
+  #promotion button:hover, #victoryModal button:hover {
+    transform: scale(1.15);
+    background: rgba(0, 255, 204, 0.2);
+    border-color: #00ffcc;
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.5);
+  }
+
+  #victoryModal button {
+    font-size: 16px;
+    padding: 12px 24px;
+    margin: 10px 5px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 99;
+  }
+
+  .stats-display {
+    font-size: 0.9em;
+    color: #aaa;
+  }
+
+  .captured-pieces {
+    margin-top: 10px;
+    font-size: 0.9em;
+  }
+
+  @media (max-width: 768px) {
+    #board {
+      grid-template-columns: repeat(8, 45px);
+      grid-template-rows: repeat(8, 45px);
+    }
+    
+    .square {
+      width: 45px;
+      height: 45px;
+      font-size: 28px;
+    }
+
+    h1 {
+      font-size: 1.8em;
+    }
+
+    button {
+      font-size: 0.9em;
+      padding: 10px 20px;
+    }
+  }
 </style>
 </head>
 <body>
 
-<h1>♟️ Chess Ult - IA</h1>
+<h1>♟️ Chess Ult - Modo IA</h1>
+
+<div class="game-info">
+  <div class="info-card">
+    👤 <strong id="playerName"></strong>
+  </div>
+  <div class="info-card">
+    🧩 ELO: <strong id="playerElo"></strong>
+  </div>
+  <div class="info-card">
+    🪙 <strong id="playerCoins"></strong>
+  </div>
+</div>
+
 <div id="board"></div>
 <div id="turn">Vez das brancas ⚪</div>
-<button id="restart">🔄 Reiniciar Partida</button>
-<button id="equipCannon">🧨 Equipar Canhão</button>
+
+<div class="button-container">
+  <button id="restart">🔄 Reiniciar Partida</button>
+  <button id="equipCannon">🧨 Equipar Canhão</button>
+  <button id="backToMenu">🏠 Voltar ao Menu</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay"></div>
 
 <div id="promotion">
-  <h3>Escolha a peça para promoção</h3>
+  <h3>🎯 Escolha a peça para promoção</h3>
   <div id="promoButtons"></div>
 </div>
 
 <div id="victoryModal"></div>
 
 <script>
-const board=document.getElementById("board"),
-turnText=document.getElementById("turn"),
-restartBtn=document.getElementById("restart"),
-equipBtn=document.getElementById("equipCannon"),
-promotionDiv=document.getElementById("promotion"),
-promoButtons=document.getElementById("promoButtons"),
-victoryModal=document.getElementById("victoryModal");
+const board = document.getElementById("board");
+const turnText = document.getElementById("turn");
+const restartBtn = document.getElementById("restart");
+const equipBtn = document.getElementById("equipCannon");
+const backBtn = document.getElementById("backToMenu");
+const promotionDiv = document.getElementById("promotion");
+const promoButtons = document.getElementById("promoButtons");
+const victoryModal = document.getElementById("victoryModal");
+const modalOverlay = document.getElementById("modalOverlay");
 
-let boardState=[],selected=null,currentPlayer="white",gameOver=false,promoPos=null,lastMove=null;
+let boardState = [];
+let selected = null;
+let currentPlayer = "white";
+let gameOver = false;
+let promoPos = null;
+let lastMove = null;
+let cannonEquipped = false;
 
 // Jogador e inventário
-const user=localStorage.getItem("currentUser");
-let players=JSON.parse(localStorage.getItem("players"))||{};
-const hasCannon = players[user] && players[user].inventory && players[user].inventory.includes("cannon");
-if(hasCannon) equipBtn.style.display="block";
+const user = localStorage.getItem("currentUser");
+if (!user) {
+  window.location.href = "index.html";
+}
 
-equipBtn.onclick=()=>{
-  alert("🧨 Canhão equipado!");
-  boardState[6][0]="🧨"; 
-  renderBoard();
+let players = JSON.parse(localStorage.getItem("players")) || {};
+const currentUserData = players[user];
+
+// Exibir informações do jogador
+document.getElementById("playerName").textContent = user;
+document.getElementById("playerElo").textContent = currentUserData?.elo || 1000;
+document.getElementById("playerCoins").textContent = currentUserData?.coins || 0;
+
+// Verificar se tem canhão
+const hasCannon = currentUserData && currentUserData.inventory && currentUserData.inventory.includes("cannon");
+if (hasCannon) {
+  equipBtn.style.display = "inline-block";
+}
+
+equipBtn.onclick = () => {
+  if (!cannonEquipped) {
+    boardState[6][0] = "🧨";
+    cannonEquipped = true;
+    equipBtn.disabled = true;
+    equipBtn.textContent = "✓ Canhão Equipado";
+    equipBtn.style.opacity = "0.6";
+    renderBoard();
+    alert("🧨 Canhão equipado com sucesso!");
+  }
+};
+
+backBtn.onclick = () => {
+  window.location.href = "menu.html";
 };
 
 // Tabuleiro inicial
-const initialBoard=[
-  ["♜","♞","♝","♛","♚","♝","♞","♜"],
-  ["♟","♟","♟","♟","♟","♟","♟","♟"],
-  ["","","","","","","",""],
-  ["","","","","","","",""],
-  ["","","","","","","",""],
-  ["","","","","","","",""],
-  ["♙","♙","♙","♙","♙","♙","♙","♙"],
-  ["♖","♘","♗","♕","♔","♗","♘","♖"]
+const initialBoard = [
+  ["♜", "♞", "♝", "♛", "♚", "♝", "♞", "♜"],
+  ["♟", "♟", "♟", "♟", "♟", "♟", "♟", "♟"],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["", "", "", "", "", "", "", ""],
+  ["♙", "♙", "♙", "♙", "♙", "♙", "♙", "♙"],
+  ["♖", "♘", "♗", "♕", "♔", "♗", "♘", "♖"]
 ];
-boardState=JSON.parse(JSON.stringify(initialBoard));
 
-function getColor(piece){if(!piece)return null;return "♙♖♘♗♕♔🧨".includes(piece)?"white":"black";}
+boardState = JSON.parse(JSON.stringify(initialBoard));
 
-function renderBoard(){
-  board.innerHTML="";
-  for(let i=0;i<8;i++){
-    for(let j=0;j<8;j++){
-      const sq=document.createElement("div");
-      // Primeiro reset das cores normais
-      sq.classList.add("square",(i+j)%2===0?"light":"dark");
+function getColor(piece) {
+  if (!piece) return null;
+  return "♙♖♘♗♕♔🧨".includes(piece) ? "white" : "black";
+}
 
-      sq.dataset.row=i;
-      sq.dataset.col=j;
+function renderBoard() {
+  board.innerHTML = "";
+  
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const sq = document.createElement("div");
+      sq.classList.add("square", (i + j) % 2 === 0 ? "light" : "dark");
+      sq.dataset.row = i;
+      sq.dataset.col = j;
 
-      const piece=boardState[i][j];
-      if(piece){
-        const span=document.createElement("span");
-        span.textContent=piece;
+      const piece = boardState[i][j];
+      if (piece) {
+        const span = document.createElement("span");
+        span.textContent = piece;
         sq.appendChild(span);
       }
 
-      // Check xeque apenas na borda do rei
-      if(piece==="♚"||piece==="♔") checkKingInDanger(i,j,sq);
+      // Verificar xeque
+      if (piece === "♚" || piece === "♔") {
+        checkKingInDanger(i, j, sq);
+      }
 
-      // Highlight último movimento
-      if(lastMove && lastMove[0]===i && lastMove[1]===j)sq.classList.add("last-move");
+      // Highlight do último movimento
+      if (lastMove && ((lastMove.from[0] === i && lastMove.from[1] === j) || 
+          (lastMove.to[0] === i && lastMove.to[1] === j))) {
+        sq.classList.add("last-move");
+      }
 
-      sq.onclick=()=>handleClick(i,j);
+      sq.onclick = () => handleClick(i, j);
       board.appendChild(sq);
     }
   }
 }
 
-function checkKingInDanger(r,c,sq){
-  const kingColor=getColor(boardState[r][c]);
-  if(isSquareThreatened(r,c,kingColor)){
-    sq.style.outline="3px solid red"; // só a borda, não o fundo
-  } else {
-    sq.style.outline=""; // remove qualquer outline antigo
+function checkKingInDanger(r, c, sq) {
+  const kingColor = getColor(boardState[r][c]);
+  if (isSquareThreatened(r, c, kingColor)) {
+    sq.classList.add("king-in-check");
   }
 }
 
-function isSquareThreatened(r,c,color){
-  for(let i=0;i<8;i++){
-    for(let j=0;j<8;j++){
-      const p=boardState[i][j];
-      if(p && getColor(p)!==color){
-        if(isValidMove(i,j,r,c)) return true;
+function isSquareThreatened(r, c, color) {
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const p = boardState[i][j];
+      if (p && getColor(p) !== color) {
+        if (isValidMove(i, j, r, c)) return true;
       }
     }
   }
   return false;
 }
 
-// Click player
-function handleClick(row,col){
-  if(gameOver || currentPlayer==="black") return; 
-  const piece=boardState[row][col];
-  if(selected){
-    const [sr,sc]=selected;
-    if(isValidMove(sr,sc,row,col)){
-      movePiece(sr,sc,row,col);
-      selected=null;
-      currentPlayer="black";
-      turnText.textContent="Vez das pretas ⚫";
-      setTimeout(aiMove,400);
-    } else { selected=null; renderBoard(); }
-  } else if(piece && getColor(piece)==="white"){
-    selected=[row,col];
-    document.querySelectorAll(".square").forEach(sq=>sq.classList.remove("highlight"));
-    const moves=getMoves(row,col);
-    moves.forEach(m=>{
-      const targetSquare=board.children[m[0]*8+m[1]];
-      const dot=document.createElement("div");
+function handleClick(row, col) {
+  if (gameOver || currentPlayer === "black") return;
+  
+  const piece = boardState[row][col];
+  
+  if (selected) {
+    const [sr, sc] = selected;
+    if (isValidMove(sr, sc, row, col)) {
+      movePiece(sr, sc, row, col);
+      selected = null;
+      
+      if (!gameOver && !promoPos) {
+        currentPlayer = "black";
+        turnText.textContent = "Vez das pretas ⚫";
+        setTimeout(aiMove, 500);
+      }
+    } else {
+      selected = null;
+      renderBoard();
+    }
+  } else if (piece && getColor(piece) === "white") {
+    selected = [row, col];
+    renderBoard();
+    
+    const targetSquare = board.children[row * 8 + col];
+    targetSquare.classList.add("highlight");
+    
+    const moves = getMoves(row, col);
+    moves.forEach(m => {
+      const sq = board.children[m[0] * 8 + m[1]];
+      const dot = document.createElement("div");
       dot.classList.add("possible-move");
-      targetSquare.appendChild(dot);
+      sq.appendChild(dot);
     });
   }
 }
 
-// Movimento
-function movePiece(sr,sc,tr,tc){
-  const target=boardState[tr][tc];
-  if(target==="♚"||target==="♔"){
-    gameOver=true;
+function movePiece(sr, sc, tr, tc) {
+  const target = boardState[tr][tc];
+  
+  // Verificar captura do rei
+  if (target === "♚" || target === "♔") {
+    gameOver = true;
     showVictory(currentPlayer);
     return;
   }
-  lastMove=[tr,tc];
-  boardState[tr][tc]=boardState[sr][sc];
-  boardState[sr][sc]="";
+  
+  lastMove = { from: [sr, sc], to: [tr, tc] };
+  boardState[tr][tc] = boardState[sr][sc];
+  boardState[sr][sc] = "";
 
-  if((boardState[tr][tc]==="♙"&&tr===0)||(boardState[tr][tc]==="♟"&&tr===7)){
-    promoPos=[tr,tc];
+  // Verificar promoção
+  if ((boardState[tr][tc] === "♙" && tr === 0) || (boardState[tr][tc] === "♟" && tr === 7)) {
+    promoPos = [tr, tc];
     openPromotion(boardState[tr][tc]);
     return;
   }
@@ -179,112 +515,219 @@ function movePiece(sr,sc,tr,tc){
   renderBoard();
 }
 
-function openPromotion(piece){
-  promotionDiv.style.display="block";
-  promoButtons.innerHTML="";
-  const isWhite=getColor(piece)==="white";
-  const options=isWhite?["♕","♖","♗","♘"]:["♛","♜","♝","♞"];
-  options.forEach(opt=>{
-    const btn=document.createElement("button");
-    btn.textContent=opt;
-    btn.onclick=()=>{
-      boardState[promoPos[0]][promoPos[1]]=opt;
-      promotionDiv.style.display="none";
-      promoPos=null;
-      currentPlayer=currentPlayer==="white"?"black":"white";
-      turnText.textContent=`Vez das ${currentPlayer==="white"?"brancas ⚪":"pretas ⚫"}`;
+function openPromotion(piece) {
+  modalOverlay.style.display = "block";
+  promotionDiv.style.display = "block";
+  promoButtons.innerHTML = "";
+  
+  const isWhite = getColor(piece) === "white";
+  const options = isWhite ? ["♕", "♖", "♗", "♘"] : ["♛", "♜", "♝", "♞"];
+  const names = ["Rainha", "Torre", "Bispo", "Cavalo"];
+  
+  options.forEach((opt, idx) => {
+    const btn = document.createElement("button");
+    btn.textContent = opt;
+    btn.title = names[idx];
+    btn.onclick = () => {
+      boardState[promoPos[0]][promoPos[1]] = opt;
+      promotionDiv.style.display = "none";
+      modalOverlay.style.display = "none";
+      promoPos = null;
+      
+      currentPlayer = currentPlayer === "white" ? "black" : "white";
+      turnText.textContent = `Vez das ${currentPlayer === "white" ? "brancas ⚪" : "pretas ⚫"}`;
       renderBoard();
-      if(currentPlayer==="black") setTimeout(aiMove,400);
+      
+      if (currentPlayer === "black") setTimeout(aiMove, 500);
     };
     promoButtons.appendChild(btn);
   });
 }
 
-// Movimentos válidos
-function isValidMove(sr,sc,tr,tc){
-  if(sr===tr && sc===tc) return false;
-  const piece=boardState[sr][sc];
-  const target=boardState[tr][tc];
-  const pieceColor=getColor(piece);
-  const targetColor=getColor(target);
-  if(targetColor===pieceColor) return false;
-  const dr=tr-sr,dc=tc-sc;
-  switch(piece){
-    case"♙":if(dc===0&&!target&&(dr===-1||(dr===-2&&sr===6&&!boardState[sr-1][sc]))) return true;
-             if(Math.abs(dc)===1&&dr===-1&&targetColor==="black") return true; break;
-    case"♟":if(dc===0&&!target&&(dr===1||(dr===2&&sr===1&&!boardState[sr+1][sc]))) return true;
-             if(Math.abs(dc)===1&&dr===1&&targetColor==="white") return true; break;
-    case"♖": case"♜": if(sr===tr||sc===tc) return clearPath(sr,sc,tr,tc); break;
-    case"♗": case"♝": if(Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
-    case"♕": case"♛": if(sr===tr||sc===tc||Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
-    case"♘": case"♞": if((Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2)) return true; break;
-    case"♔": case"♚": if(Math.abs(dr)<=1&&Math.abs(dc)<=1) return true; break;
-    case"🧨": if(sr===tr && Math.abs(dc)<=2 && !target) return true;
-               if(Math.abs(dc)<=1 && dr===-1 && targetColor==="black") return true; break;
+function isValidMove(sr, sc, tr, tc) {
+  if (sr === tr && sc === tc) return false;
+  
+  const piece = boardState[sr][sc];
+  const target = boardState[tr][tc];
+  const pieceColor = getColor(piece);
+  const targetColor = getColor(target);
+  
+  if (targetColor === pieceColor) return false;
+  
+  const dr = tr - sr;
+  const dc = tc - sc;
+  
+  switch (piece) {
+    case "♙":
+      if (dc === 0 && !target && (dr === -1 || (dr === -2 && sr === 6 && !boardState[sr - 1][sc]))) return true;
+      if (Math.abs(dc) === 1 && dr === -1 && targetColor === "black") return true;
+      break;
+      
+    case "♟":
+      if (dc === 0 && !target && (dr === 1 || (dr === 2 && sr === 1 && !boardState[sr + 1][sc]))) return true;
+      if (Math.abs(dc) === 1 && dr === 1 && targetColor === "white") return true;
+      break;
+      
+    case "♖":
+    case "♜":
+      if (sr === tr || sc === tc) return clearPath(sr, sc, tr, tc);
+      break;
+      
+    case "♗":
+    case "♝":
+      if (Math.abs(dr) === Math.abs(dc)) return clearPath(sr, sc, tr, tc);
+      break;
+      
+    case "♕":
+    case "♛":
+      if (sr === tr || sc === tc || Math.abs(dr) === Math.abs(dc)) return clearPath(sr, sc, tr, tc);
+      break;
+      
+    case "♘":
+    case "♞":
+      if ((Math.abs(dr) === 2 && Math.abs(dc) === 1) || (Math.abs(dr) === 1 && Math.abs(dc) === 2)) return true;
+      break;
+      
+    case "♔":
+    case "♚":
+      if (Math.abs(dr) <= 1 && Math.abs(dc) <= 1) return true;
+      break;
+      
+    case "🧨":
+      // Movimento horizontal até 2 casas
+      if (sr === tr && Math.abs(dc) <= 2 && !target) return clearPath(sr, sc, tr, tc);
+      // Captura diagonal
+      if (Math.abs(dc) <= 1 && dr === -1 && targetColor === "black") return true;
+      break;
   }
+  
   return false;
 }
-function clearPath(sr,sc,tr,tc){ const stepR=Math.sign(tr-sr),stepC=Math.sign(tc-sc); let r=sr+stepR,c=sc+stepC; while(r!==tr||c!==tc){ if(boardState[r][c]) return false; r+=stepR;c+=stepC; } return true; }
-function getMoves(r,c){ const moves=[]; for(let i=0;i<8;i++){ for(let j=0;j<8;j++){ if(isValidMove(r,c,i,j)) moves.push([i,j]); } } return moves; }
 
-// IA
-function aiMove(){
-  if(gameOver) return;
-  const moves=[];
-  for(let i=0;i<8;i++){
-    for(let j=0;j<8;j++){
-      const p=boardState[i][j];
-      if(p && getColor(p)==="black"){
-        const ms=getMoves(i,j);
-        ms.forEach(mv=>moves.push({from:[i,j],to:mv}));
+function clearPath(sr, sc, tr, tc) {
+  const stepR = Math.sign(tr - sr);
+  const stepC = Math.sign(tc - sc);
+  let r = sr + stepR;
+  let c = sc + stepC;
+  
+  while (r !== tr || c !== tc) {
+    if (boardState[r][c]) return false;
+    r += stepR;
+    c += stepC;
+  }
+  
+  return true;
+}
+
+function getMoves(r, c) {
+  const moves = [];
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      if (isValidMove(r, c, i, j)) moves.push([i, j]);
+    }
+  }
+  return moves;
+}
+
+function aiMove() {
+  if (gameOver) return;
+  
+  const moves = [];
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const p = boardState[i][j];
+      if (p && getColor(p) === "black") {
+        const ms = getMoves(i, j);
+        ms.forEach(mv => moves.push({ from: [i, j], to: mv, piece: p }));
       }
     }
   }
-  if(moves.length===0){ showVictory("white"); return; }
+  
+  if (moves.length === 0) {
+    showVictory("white");
+    return;
+  }
 
-  let bestMoves = moves.filter(mv=>{
-    const t=boardState[mv.to[0]][mv.to[1]];
-    return t && getColor(t)==="white";
+  // Priorizar capturas
+  let bestMoves = moves.filter(mv => {
+    const t = boardState[mv.to[0]][mv.to[1]];
+    return t && getColor(t) === "white";
   });
-  if(bestMoves.length===0){
-    bestMoves = moves.filter(mv=>boardState[mv.from[0]][mv.from[1]]==="♟" && mv.to[0]>mv.from[0]);
+  
+  // Se não há capturas, avançar peões
+  if (bestMoves.length === 0) {
+    bestMoves = moves.filter(mv => boardState[mv.from[0]][mv.from[1]] === "♟" && mv.to[0] > mv.from[0]);
   }
-  if(bestMoves.length===0) bestMoves = moves;
+  
+  // Senão, qualquer movimento
+  if (bestMoves.length === 0) bestMoves = moves;
 
-  const choice=bestMoves[Math.floor(Math.random()*bestMoves.length)];
-  movePiece(choice.from[0],choice.from[1],choice.to[0],choice.to[1]);
-  currentPlayer="white";
-  turnText.textContent="Vez das brancas ⚪";
+  const choice = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+  movePiece(choice.from[0], choice.from[1], choice.to[0], choice.to[1]);
+  
+  if (!gameOver && !promoPos) {
+    currentPlayer = "white";
+    turnText.textContent = "Vez das brancas ⚪";
+  }
 }
 
-// Vitória
-function showVictory(winner){
-  gameOver=true;
-  let text=winner==="white"?"Você venceu! 🏆":"IA venceu! 😢";
-  if(winner==="white"){
-    players[user].elo +=50;
-    players[user].coins +=10;
-    localStorage.setItem("players",JSON.stringify(players));
-    text+=` +50 ELO, +10 moedas`;
+function showVictory(winner) {
+  gameOver = true;
+  modalOverlay.style.display = "block";
+  
+  let text = winner === "white" ? "🏆 Você venceu!" : "😢 IA venceu!";
+  let rewards = "";
+  
+  if (winner === "white") {
+    currentUserData.elo = (currentUserData.elo || 1000) + 50;
+    currentUserData.coins = (currentUserData.coins || 0) + 10;
+    players[user] = currentUserData;
+    localStorage.setItem("players", JSON.stringify(players));
+    
+    rewards = `<p style="color: #00ff99; font-size: 1.2em; margin-top: 10px;">+50 ELO | +10 🪙</p>`;
+    
+    // Atualizar display
+    document.getElementById("playerElo").textContent = currentUserData.elo;
+    document.getElementById("playerCoins").textContent = currentUserData.coins;
   }
-  victoryModal.innerHTML=`<h2>${text}</h2>
-  <button onclick="restartGame()">Jogar de novo</button>
-  <button onclick="exitGame()">Sair</button>`;
-  victoryModal.style.display="block";
+  
+  victoryModal.innerHTML = `
+    <h2>${text}</h2>
+    ${rewards}
+    <div style="margin-top: 20px;">
+      <button onclick="restartGame()">🔄 Jogar Novamente</button>
+      <button onclick="exitGame()">🏠 Voltar ao Menu</button>
+    </div>
+  `;
+  victoryModal.style.display = "block";
 }
-function restartGame(){
-  victoryModal.style.display="none";
-  boardState=JSON.parse(JSON.stringify(initialBoard));
-  lastMove=null;
-  currentPlayer="white";
-  gameOver=false;
-  turnText.textContent="Vez das brancas ⚪";
+
+function restartGame() {
+  victoryModal.style.display = "none";
+  modalOverlay.style.display = "none";
+  boardState = JSON.parse(JSON.stringify(initialBoard));
+  lastMove = null;
+  currentPlayer = "white";
+  gameOver = false;
+  cannonEquipped = false;
+  
+  if (hasCannon) {
+    equipBtn.disabled = false;
+    equipBtn.textContent = "🧨 Equipar Canhão";
+    equipBtn.style.opacity = "1";
+  }
+  
+  turnText.textContent = "Vez das brancas ⚪";
   renderBoard();
 }
-function exitGame(){ window.location.href="menu.html"; }
 
-restartBtn.onclick=restartGame;
+function exitGame() {
+  window.location.href = "menu.html";
+}
 
+restartBtn.onclick = restartGame;
+
+// Inicializar jogo
 renderBoard();
 </script>
 </body>
