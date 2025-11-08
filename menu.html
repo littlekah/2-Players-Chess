@@ -16,7 +16,7 @@
 
   body {
     font-family: "Poppins", sans-serif;
-    background: linear-gradient(180deg, #0d0d0d, #1a1a1a);
+    background: linear-gradient(135deg, #262421 0%, #1a1815 100%);
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -26,51 +26,142 @@
     overflow-x: hidden;
   }
 
+  .header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
   h1 { 
     margin-top: 20px; 
-    font-size: 2.5em; 
-    color: #00ff99;
-    text-shadow: 0 0 20px rgba(0, 255, 153, 0.5);
+    font-size: 3em; 
+    color: #81b64c;
+    text-shadow: 0 4px 20px rgba(129, 182, 76, 0.6);
     font-weight: 700;
+    letter-spacing: -1px;
+  }
+
+  .subtitle {
+    color: #b0b0b0;
+    font-size: 1.1em;
+    margin-top: 5px;
   }
 
   .stats {
-    background: linear-gradient(135deg, #1a1a1a, #111);
-    padding: 15px 30px;
-    border-radius: 15px;
-    margin-top: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    border: 1px solid #333;
+    background: linear-gradient(135deg, #2c2a26, #1f1d1a);
+    padding: 20px 35px;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    border: 2px solid #3d3a33;
     font-weight: 600;
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
-  .stats span {
-    margin: 0 10px;
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.1em;
+  }
+
+  .stat-item .label {
+    color: #999;
+    font-size: 0.9em;
+  }
+
+  .stat-item .value {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.2em;
+  }
+
+  .menu-box { 
+    margin-top: 30px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 450px;
   }
 
   button {
-    background: linear-gradient(90deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, #81b64c, #6a9a3d);
     border: none;
     border-radius: 12px;
-    padding: 14px 28px;
-    font-size: 1.05em;
+    padding: 18px 32px;
+    font-size: 1.1em;
     color: white;
-    margin: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 600;
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
-    min-width: 250px;
+    box-shadow: 0 6px 20px rgba(129, 182, 76, 0.3);
+    width: 100%;
+    font-family: "Poppins", sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+  }
+
+  button:hover::before {
+    left: 100%;
   }
 
   button:hover { 
-    transform: translateY(-2px) scale(1.05); 
-    background: linear-gradient(90deg, #00aaff, #0077cc);
-    box-shadow: 0 6px 20px rgba(0, 170, 255, 0.5);
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 25px rgba(129, 182, 76, 0.5);
+    background: linear-gradient(135deg, #91c65c, #7aaa4d);
   }
 
   button:active {
-    transform: translateY(0) scale(1.02);
+    transform: translateY(-1px);
+  }
+
+  .btn-online {
+    background: linear-gradient(135deg, #759558, #5d7a44);
+    box-shadow: 0 6px 20px rgba(117, 149, 88, 0.3);
+  }
+
+  .btn-online:hover {
+    background: linear-gradient(135deg, #85a568, #6d8a54);
+    box-shadow: 0 8px 25px rgba(117, 149, 88, 0.5);
+  }
+
+  .btn-ai {
+    background: linear-gradient(135deg, #4a7c59, #3d6449);
+  }
+
+  .btn-ai:hover {
+    background: linear-gradient(135deg, #5a8c69, #4d7459);
+  }
+
+  .btn-local {
+    background: linear-gradient(135deg, #b58863, #9e7150);
+  }
+
+  .btn-local:hover {
+    background: linear-gradient(135deg, #c59873, #ae8160);
+  }
+
+  .btn-tutorial {
+    background: linear-gradient(135deg, #4e4e4e, #3a3a3a);
+  }
+
+  .btn-tutorial:hover {
+    background: linear-gradient(135deg, #5e5e5e, #4a4a4a);
   }
 
   #devMsg { 
@@ -79,10 +170,10 @@
     display: none; 
     animation: fadeInOut 0.5s ease-in-out;
     font-weight: 500;
-    background: rgba(255, 204, 0, 0.1);
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 204, 0, 0.3);
+    background: rgba(255, 204, 0, 0.15);
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 204, 0, 0.4);
   }
 
   @keyframes fadeInOut { 
@@ -90,51 +181,48 @@
     100% { opacity: 1; transform: translateY(0); }
   }
 
-  .menu-box { 
-    margin-top: 30px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    gap: 5px;
-  }
-
   .content-wrapper {
     display: flex;
-    gap: 20px;
-    margin-top: 30px;
+    gap: 25px;
+    margin-top: 40px;
     flex-wrap: wrap;
     justify-content: center;
     max-width: 1200px;
+    width: 100%;
   }
 
   .leaderboard, .shop { 
-    background: linear-gradient(135deg, #1a1a1a, #141414);
-    border-radius: 15px; 
-    padding: 25px; 
+    background: linear-gradient(135deg, #2c2a26, #1f1d1a);
+    border-radius: 16px; 
+    padding: 30px; 
     width: 100%;
-    max-width: 350px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-    border: 1px solid #2a2a2a;
+    max-width: 380px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    border: 2px solid #3d3a33;
   }
 
   .leaderboard h2, .shop h2 { 
     text-align: center; 
-    color: #00ffcc;
-    margin-bottom: 20px;
-    font-size: 1.5em;
-    text-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    color: #81b64c;
+    margin-bottom: 25px;
+    font-size: 1.7em;
+    text-shadow: 0 2px 15px rgba(129, 182, 76, 0.4);
+    font-weight: 700;
   }
 
   .player-entry { 
     display: flex; 
     justify-content: space-between; 
-    border-bottom: 1px solid #333; 
-    padding: 12px 5px;
-    transition: background 0.2s ease;
+    align-items: center;
+    border-bottom: 1px solid #3d3a33; 
+    padding: 15px 8px;
+    transition: all 0.2s ease;
+    border-radius: 8px;
   }
 
   .player-entry:hover {
-    background: rgba(0, 255, 204, 0.05);
+    background: rgba(129, 182, 76, 0.1);
+    transform: translateX(5px);
   }
 
   .player-entry:last-child {
@@ -142,89 +230,149 @@
   }
 
   .player-entry.current-user {
-    background: rgba(0, 255, 153, 0.1);
-    border-left: 3px solid #00ff99;
-    padding-left: 8px;
+    background: rgba(129, 182, 76, 0.15);
+    border-left: 4px solid #81b64c;
+    padding-left: 12px;
+    font-weight: 700;
+    box-shadow: 0 0 15px rgba(129, 182, 76, 0.2);
+  }
+
+  .player-rank {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .rank-number {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: #999;
+    min-width: 30px;
+  }
+
+  .player-name {
     font-weight: 600;
+    font-size: 1.05em;
   }
 
-  .item { 
-    background: linear-gradient(135deg, #252525, #1e1e1e);
-    border-radius: 12px; 
-    padding: 15px; 
-    margin: 12px 0;
-    border: 1px solid #333;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 255, 204, 0.2);
-  }
-
-  .item strong {
-    color: #00ffcc;
+  .player-elo {
+    font-weight: 700;
+    color: #81b64c;
     font-size: 1.1em;
   }
 
+  .item { 
+    background: linear-gradient(135deg, #333127, #2a2820);
+    border-radius: 14px; 
+    padding: 20px; 
+    margin: 15px 0;
+    border: 2px solid #3d3a33;
+    transition: all 0.3s ease;
+  }
+
+  .item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(129, 182, 76, 0.3);
+    border-color: #81b64c;
+  }
+
+  .item strong {
+    color: #81b64c;
+    font-size: 1.2em;
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .item-desc {
+    color: #999;
+    font-size: 0.9em;
+    margin: 8px 0;
+  }
+
+  .item-price {
+    color: #ffd700;
+    font-weight: 600;
+    font-size: 1.05em;
+    margin: 10px 0;
+  }
+
   .item button { 
-    background: linear-gradient(90deg, #28a745, #218838);
-    margin-top: 10px;
-    min-width: auto;
+    background: linear-gradient(135deg, #81b64c, #6a9a3d);
+    margin-top: 12px;
     width: 100%;
-    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 12px rgba(129, 182, 76, 0.3);
+    padding: 12px;
+    font-size: 1em;
   }
 
   .item button:hover {
-    background: linear-gradient(90deg, #34ce57, #28a745);
-    box-shadow: 0 4px 12px rgba(52, 206, 87, 0.5);
+    background: linear-gradient(135deg, #91c65c, #7aaa4d);
+    box-shadow: 0 6px 16px rgba(129, 182, 76, 0.5);
   }
 
   .item.owned {
-    opacity: 0.6;
-    border: 1px solid #555;
+    opacity: 0.7;
+    border-color: #555;
   }
 
   .item.owned button {
-    background: #555;
+    background: linear-gradient(135deg, #555, #444);
     cursor: not-allowed;
   }
 
   .item.owned button:hover {
     transform: none;
-    background: #555;
-  }
-
-  @media (max-width: 768px) {
-    h1 { font-size: 1.8em; }
-    button { min-width: 200px; font-size: 0.95em; }
-    .content-wrapper { flex-direction: column; }
-    .leaderboard, .shop { max-width: 100%; }
+    background: linear-gradient(135deg, #555, #444);
   }
 
   .rank-medal {
-    font-size: 1.2em;
-    margin-right: 5px;
+    font-size: 1.4em;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+  }
+
+  @media (max-width: 768px) {
+    h1 { font-size: 2em; }
+    .content-wrapper { flex-direction: column; }
+    .leaderboard, .shop { max-width: 100%; }
+    .stats { gap: 15px; }
   }
 </style>
 </head>
 <body>
 
-<h1>♟️ Chess Ult</h1>
+<div class="header">
+  <h1>♟️ Chess Ult</h1>
+  <p class="subtitle">Jogue, Evolua e Conquiste</p>
+</div>
 
 <div class="stats">
-  <span>👤 <strong id="username"></strong></span> | 
-  <span>🪙 <strong id="coins"></strong></span> | 
-  <span>🧩 ELO: <strong id="elo"></strong></span>
+  <div class="stat-item">
+    <span class="label">Jogador</span>
+    <span class="value" id="username"></span>
+  </div>
+  <div class="stat-item">
+    <span class="label">🪙 Moedas</span>
+    <span class="value" id="coins"></span>
+  </div>
+  <div class="stat-item">
+    <span class="label">🧩 ELO</span>
+    <span class="value" id="elo"></span>
+  </div>
 </div>
 
 <div class="menu-box">
-  <button onclick="playOnline()">🌐 Jogar Online</button>
-  <p id="devMsg">🔧 Modo em desenvolvimento...</p>
+  <button class="btn-online" onclick="playOnline()">🌐 Jogar Online</button>
+  <p id="devMsg">🔧 Carregando servidor online...</p>
 
-  <button onclick="navigateTo('iachess.html')">🤖 Jogar com a IA</button>
-  <button onclick="navigateTo('localchess.html')">👬 Jogar com um Amigo</button>
-  <button onclick="navigateTo('tutorialchess.html')">📘 Ir ao Tutorial</button>
+  <button class="btn-ai" onclick="navigateTo('iachess.html')">🤖 Jogar com a IA</button>
+  <button class="btn-local" onclick="navigateTo('localchess.html')">👥 Jogar com um Amigo</button>
+  <button class="btn-tutorial" onclick="navigateTo('tutorialchess.html')">📘 Tutorial</button>
 </div>
 
 <div class="content-wrapper">
@@ -250,47 +398,57 @@ if (!user) {
 let players = JSON.parse(localStorage.getItem("players")) || {};
 let current = players[user];
 
-// Inicializar inventário se não existir
+// Inicializar inventário e estatísticas se não existir
 if (!current.inventory) {
   current.inventory = [];
-  players[user] = current;
-  localStorage.setItem("players", JSON.stringify(players));
 }
+if (!current.elo) {
+  current.elo = 1000;
+}
+if (!current.coins) {
+  current.coins = 0;
+}
+players[user] = current;
+localStorage.setItem("players", JSON.stringify(players));
 
 // Mostrar dados do jogador logado
 document.getElementById("username").textContent = user;
-document.getElementById("coins").textContent = current.coins || 0;
-document.getElementById("elo").textContent = current.elo || 1000;
+document.getElementById("coins").textContent = current.coins;
+document.getElementById("elo").textContent = current.elo;
 
 // Dados da loja
 const shopData = [
-  { name: "Pacote Canhão 💣", price: 1500, id: "cannon", description: "Peça especial de ataque" },
-  { name: "EVO Torre 🧱", price: 1000, id: "towerEvo", description: "Melhoria para a Torre" },
-  { name: "EVO Bispo 🔮", price: 1000, id: "bishopEvo", description: "Melhoria para o Bispo" },
-  { name: "Skin Dourada ✨", price: 800, id: "goldSkin", description: "Tema visual premium" }
+  { name: "Pacote Canhão 💣", price: 1500, id: "cannon", description: "Peça especial de ataque de longo alcance" },
+  { name: "EVO Torre 🧱", price: 1000, id: "towerEvo", description: "Melhoria avançada para a Torre" },
+  { name: "EVO Bispo 🔮", price: 1000, id: "bishopEvo", description: "Melhoria especial para o Bispo" },
+  { name: "Skin Dourada ✨", price: 800, id: "goldSkin", description: "Tema visual premium exclusivo" }
 ];
 
 // Renderizar itens da loja
 const shopContainer = document.getElementById("shopItems");
-shopData.forEach(item => {
-  const div = document.createElement("div");
-  div.className = "item";
-  
-  const owned = current.inventory.includes(item.id);
-  if (owned) {
-    div.classList.add("owned");
-  }
-  
-  div.innerHTML = `
-    <strong>${item.name}</strong><br>
-    <small style="color: #aaa;">${item.description}</small><br>
-    💰 ${item.price} moedas<br>
-    <button onclick="buyItem('${item.id}', ${item.price})" ${owned ? 'disabled' : ''}>
-      ${owned ? '✓ Adquirido' : 'Comprar'}
-    </button>
-  `;
-  shopContainer.appendChild(div);
-});
+if (shopData.length === 0) {
+  shopContainer.innerHTML = '<div class="empty-state">Nenhum item disponível no momento</div>';
+} else {
+  shopData.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    
+    const owned = current.inventory.includes(item.id);
+    if (owned) {
+      div.classList.add("owned");
+    }
+    
+    div.innerHTML = `
+      <strong>${item.name}</strong>
+      <div class="item-desc">${item.description}</div>
+      <div class="item-price">💰 ${item.price} moedas</div>
+      <button onclick="buyItem('${item.id}', ${item.price})" ${owned ? 'disabled' : ''}>
+        ${owned ? '✓ Adquirido' : 'Comprar'}
+      </button>
+    `;
+    shopContainer.appendChild(div);
+  });
+}
 
 // Função de compra
 function buyItem(id, price) {
@@ -320,11 +478,20 @@ function buyItem(id, price) {
 // Atualizar Top 10 Global
 function updateLeaderboard() {
   const topPlayers = Object.entries(players)
-    .map(([name, data]) => ({ name, elo: data.elo || 1000 }))
+    .map(([name, data]) => ({ 
+      name, 
+      elo: data.elo || 1000 
+    }))
     .sort((a, b) => b.elo - a.elo)
     .slice(0, 10);
 
   const lbContainer = document.getElementById("leaderboardList");
+  
+  if (topPlayers.length === 0) {
+    lbContainer.innerHTML = '<div class="empty-state">Nenhum jogador no ranking ainda</div>';
+    return;
+  }
+
   lbContainer.innerHTML = "";
 
   const medals = ["🥇", "🥈", "🥉"];
@@ -340,8 +507,12 @@ function updateLeaderboard() {
     const medal = index < 3 ? `<span class="rank-medal">${medals[index]}</span>` : "";
     
     div.innerHTML = `
-      <span>${medal}${index + 1}. ${player.name}</span>
-      <span><strong>${player.elo}</strong></span>
+      <div class="player-rank">
+        ${medal}
+        <span class="rank-number">#${index + 1}</span>
+        <span class="player-name">${player.name}</span>
+      </div>
+      <span class="player-elo">${player.elo}</span>
     `;
     lbContainer.appendChild(div);
   });
@@ -349,11 +520,14 @@ function updateLeaderboard() {
 
 updateLeaderboard();
 
-// Função para jogar online (em desenvolvimento)
+// Função para jogar online
 function playOnline() {
   const msg = document.getElementById("devMsg");
   msg.style.display = "block";
-  setTimeout(() => msg.style.display = "none", 2500);
+  setTimeout(() => {
+    // Redirecionar para o xadrez online
+    window.location.href = "onlinechess.html";
+  }, 1000);
 }
 
 // Função de navegação
@@ -363,4 +537,4 @@ function navigateTo(page) {
 </script>
 
 </body>
-</html>
+     </html>
