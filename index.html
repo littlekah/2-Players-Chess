@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Ult - Login</title>
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background: radial-gradient(circle, #1e1e1e, #0e0e0e);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  h1 { font-size: 2.5em; margin-bottom: 20px; }
+  input {
+    margin: 6px;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    outline: none;
+    font-size: 1em;
+    width: 230px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 1em;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    background: linear-gradient(90deg, #4CAF50, #2E8B57);
+    color: white;
+    transition: 0.3s;
+  }
+  button:hover { transform: scale(1.05); background: linear-gradient(90deg, #66ff99, #33cc66); }
+  #registerBox { display: none; }
+  .switch { margin-top: 10px; cursor: pointer; color: #aaa; }
+</style>
+</head>
+<body>
+
+<h1>♟️ Chess Ult</h1>
+
+<div id="loginBox" style="display: block;">
+  <h2>Entrar</h2>
+  <input type="text" id="loginUser" placeholder="Usuário"><br>
+  <input type="password" id="loginPass" placeholder="Senha"><br>
+  <button onclick="login()">Entrar</button>
+  <div class="switch" onclick="toggleForms()">Criar conta</div>
+</div>
+
+<div id="registerBox" style="display: none;">
+  <h2>Criar Conta</h2>
+  <input type="text" id="regUser" placeholder="Usuário"><br>
+  <input type="password" id="regPass" placeholder="Senha"><br>
+  <button onclick="register()">Registrar</button>
+  <div class="switch" onclick="toggleForms()">Já tem conta?</div>
+</div>
+
+<script>
+const storedUser = localStorage.getItem("currentUser");
+if(storedUser){
+  // Usuário já logado, entra direto
+  window.location.href = "menu.html";
+}
+
+function toggleForms() {
+  const loginBox = document.getElementById("loginBox");
+  const registerBox = document.getElementById("registerBox");
+  if (loginBox.style.display === "none") {
+    loginBox.style.display = "block";
+    registerBox.style.display = "none";
+  } else {
+    loginBox.style.display = "none";
+    registerBox.style.display = "block";
+  }
+}
+
+function register() {
+  const user = document.getElementById("regUser").value.trim();
+  const pass = document.getElementById("regPass").value.trim();
+
+  if (!user || !pass) return alert("Preencha todos os campos!");
+
+  let players = JSON.parse(localStorage.getItem("players")) || {};
+
+  if (players[user]) return alert("Usuário já existe!");
+
+  players[user] = { password: pass, elo: 400, coins: 0, inventory: [] };
+  localStorage.setItem("players", JSON.stringify(players));
+  localStorage.setItem("currentUser", user);
+  alert("Conta criada com sucesso! Entrando...");
+  window.location.href = "menu.html";
+}
+
+function login() {
+  const user = document.getElementById("loginUser").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+
+  let players = JSON.parse(localStorage.getItem("players")) || {};
+
+  if (!players[user]) return alert("Usuário não encontrado!");
+  if (players[user].password !== pass) return alert("Senha incorreta!");
+
+  localStorage.setItem("currentUser", user);
+  window.location.href = "menu.html";
+}
+</script>
+
+</body>
+</html>

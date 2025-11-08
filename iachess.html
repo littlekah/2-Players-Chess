@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Ult - IA</title>
+<style>
+body { font-family:"Poppins",sans-serif; background:#0b0b0b; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; }
+h1 { color:#7ab800; margin-bottom:10px; }
+#board { display:grid; grid-template-columns:repeat(8,70px); grid-template-rows:repeat(8,70px); border:3px solid #7ab800; box-shadow:0 0 15px #7ab80070; }
+.square { width:70px; height:70px; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer; user-select:none; position:relative; transition:0.2s; }
+.light { background-color:#8a9a5b; }
+.dark { background-color:#4a5b33; }
+.highlight { outline:3px solid #00ffcc; }
+.possible-move { background-color: rgba(0,255,204,0.5); border-radius:50%; width:50%; height:50%; pointer-events:none; position:absolute; animation: pulse 1s infinite; }
+@keyframes pulse { 0%{transform:scale(0.8);opacity:0.7;}50%{transform:scale(1);opacity:1;}100%{transform:scale(0.8);opacity:0.7;} }
+.last-move { background-color: rgba(255,255,0,0.3); }
+#turn { margin-top:10px; font-size:1.2em; }
+#equipCannon, #restart { margin-top:10px; padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; transition:0.2s; }
+#equipCannon { background:#ff4747; color:#fff; display:none; }
+#equipCannon:hover { background:#ff7070; }
+#restart { background:#7ab800; color:#0b0b0b; }
+#restart:hover { background:#aaff00; }
+#promotion, #victoryModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#111; border:2px solid #7ab800; border-radius:10px; padding:15px; text-align:center; box-shadow:0 0 20px #7ab80090; z-index:100; }
+#promotion button, #victoryModal button { font-size:24px; margin:5px; cursor:pointer; background:none; border:none; color:#fff; transition:0.2s; }
+#promotion button:hover, #victoryModal button:hover { transform:scale(1.2); color:#00ffcc; }
+/* Peças mais escuras */
+.square span { color:#1b1b1b; font-weight:bold; }
+</style>
+</head>
+<body>
+
+<h1>♟️ Chess Ult - IA</h1>
+<div id="board"></div>
+<div id="turn">Vez das brancas ⚪</div>
+<button id="restart">🔄 Reiniciar Partida</button>
+<button id="equipCannon">🧨 Equipar Canhão</button>
+
+<div id="promotion">
+  <h3>Escolha a peça para promoção</h3>
+  <div id="promoButtons"></div>
+</div>
+
+<div id="victoryModal"></div>
+
+<script>
+const board=document.getElementById("board"),
+turnText=document.getElementById("turn"),
+restartBtn=document.getElementById("restart"),
+equipBtn=document.getElementById("equipCannon"),
+promotionDiv=document.getElementById("promotion"),
+promoButtons=document.getElementById("promoButtons"),
+victoryModal=document.getElementById("victoryModal");
+
+let boardState=[],selected=null,currentPlayer="white",gameOver=false,promoPos=null,lastMove=null;
+
+// Jogador e inventário
+const user=localStorage.getItem("currentUser");
+let players=JSON.parse(localStorage.getItem("players"))||{};
+const hasCannon = players[user] && players[user].inventory && players[user].inventory.includes("cannon");
+if(hasCannon) equipBtn.style.display="block";
+
+equipBtn.onclick=()=>{
+  alert("🧨 Canhão equipado!");
+  boardState[6][0]="🧨"; 
+  renderBoard();
+};
+
+// Tabuleiro inicial
+const initialBoard=[
+  ["♜","♞","♝","♛","♚","♝","♞","♜"],
+  ["♟","♟","♟","♟","♟","♟","♟","♟"],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["♙","♙","♙","♙","♙","♙","♙","♙"],
+  ["♖","♘","♗","♕","♔","♗","♘","♖"]
+];
+boardState=JSON.parse(JSON.stringify(initialBoard));
+
+function getColor(piece){if(!piece)return null;return "♙♖♘♗♕♔🧨".includes(piece)?"white":"black";}
+
+function renderBoard(){
+  board.innerHTML="";
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      const sq=document.createElement("div");
+      // Primeiro reset das cores normais
+      sq.classList.add("square",(i+j)%2===0?"light":"dark");
+
+      sq.dataset.row=i;
+      sq.dataset.col=j;
+
+      const piece=boardState[i][j];
+      if(piece){
+        const span=document.createElement("span");
+        span.textContent=piece;
+        sq.appendChild(span);
+      }
+
+      // Check xeque apenas na borda do rei
+      if(piece==="♚"||piece==="♔") checkKingInDanger(i,j,sq);
+
+      // Highlight último movimento
+      if(lastMove && lastMove[0]===i && lastMove[1]===j)sq.classList.add("last-move");
+
+      sq.onclick=()=>handleClick(i,j);
+      board.appendChild(sq);
+    }
+  }
+}
+
+function checkKingInDanger(r,c,sq){
+  const kingColor=getColor(boardState[r][c]);
+  if(isSquareThreatened(r,c,kingColor)){
+    sq.style.outline="3px solid red"; // só a borda, não o fundo
+  } else {
+    sq.style.outline=""; // remove qualquer outline antigo
+  }
+}
+
+function isSquareThreatened(r,c,color){
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      const p=boardState[i][j];
+      if(p && getColor(p)!==color){
+        if(isValidMove(i,j,r,c)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Click player
+function handleClick(row,col){
+  if(gameOver || currentPlayer==="black") return; 
+  const piece=boardState[row][col];
+  if(selected){
+    const [sr,sc]=selected;
+    if(isValidMove(sr,sc,row,col)){
+      movePiece(sr,sc,row,col);
+      selected=null;
+      currentPlayer="black";
+      turnText.textContent="Vez das pretas ⚫";
+      setTimeout(aiMove,400);
+    } else { selected=null; renderBoard(); }
+  } else if(piece && getColor(piece)==="white"){
+    selected=[row,col];
+    document.querySelectorAll(".square").forEach(sq=>sq.classList.remove("highlight"));
+    const moves=getMoves(row,col);
+    moves.forEach(m=>{
+      const targetSquare=board.children[m[0]*8+m[1]];
+      const dot=document.createElement("div");
+      dot.classList.add("possible-move");
+      targetSquare.appendChild(dot);
+    });
+  }
+}
+
+// Movimento
+function movePiece(sr,sc,tr,tc){
+  const target=boardState[tr][tc];
+  if(target==="♚"||target==="♔"){
+    gameOver=true;
+    showVictory(currentPlayer);
+    return;
+  }
+  lastMove=[tr,tc];
+  boardState[tr][tc]=boardState[sr][sc];
+  boardState[sr][sc]="";
+
+  if((boardState[tr][tc]==="♙"&&tr===0)||(boardState[tr][tc]==="♟"&&tr===7)){
+    promoPos=[tr,tc];
+    openPromotion(boardState[tr][tc]);
+    return;
+  }
+
+  renderBoard();
+}
+
+function openPromotion(piece){
+  promotionDiv.style.display="block";
+  promoButtons.innerHTML="";
+  const isWhite=getColor(piece)==="white";
+  const options=isWhite?["♕","♖","♗","♘"]:["♛","♜","♝","♞"];
+  options.forEach(opt=>{
+    const btn=document.createElement("button");
+    btn.textContent=opt;
+    btn.onclick=()=>{
+      boardState[promoPos[0]][promoPos[1]]=opt;
+      promotionDiv.style.display="none";
+      promoPos=null;
+      currentPlayer=currentPlayer==="white"?"black":"white";
+      turnText.textContent=`Vez das ${currentPlayer==="white"?"brancas ⚪":"pretas ⚫"}`;
+      renderBoard();
+      if(currentPlayer==="black") setTimeout(aiMove,400);
+    };
+    promoButtons.appendChild(btn);
+  });
+}
+
+// Movimentos válidos
+function isValidMove(sr,sc,tr,tc){
+  if(sr===tr && sc===tc) return false;
+  const piece=boardState[sr][sc];
+  const target=boardState[tr][tc];
+  const pieceColor=getColor(piece);
+  const targetColor=getColor(target);
+  if(targetColor===pieceColor) return false;
+  const dr=tr-sr,dc=tc-sc;
+  switch(piece){
+    case"♙":if(dc===0&&!target&&(dr===-1||(dr===-2&&sr===6&&!boardState[sr-1][sc]))) return true;
+             if(Math.abs(dc)===1&&dr===-1&&targetColor==="black") return true; break;
+    case"♟":if(dc===0&&!target&&(dr===1||(dr===2&&sr===1&&!boardState[sr+1][sc]))) return true;
+             if(Math.abs(dc)===1&&dr===1&&targetColor==="white") return true; break;
+    case"♖": case"♜": if(sr===tr||sc===tc) return clearPath(sr,sc,tr,tc); break;
+    case"♗": case"♝": if(Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♕": case"♛": if(sr===tr||sc===tc||Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♘": case"♞": if((Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2)) return true; break;
+    case"♔": case"♚": if(Math.abs(dr)<=1&&Math.abs(dc)<=1) return true; break;
+    case"🧨": if(sr===tr && Math.abs(dc)<=2 && !target) return true;
+               if(Math.abs(dc)<=1 && dr===-1 && targetColor==="black") return true; break;
+  }
+  return false;
+}
+function clearPath(sr,sc,tr,tc){ const stepR=Math.sign(tr-sr),stepC=Math.sign(tc-sc); let r=sr+stepR,c=sc+stepC; while(r!==tr||c!==tc){ if(boardState[r][c]) return false; r+=stepR;c+=stepC; } return true; }
+function getMoves(r,c){ const moves=[]; for(let i=0;i<8;i++){ for(let j=0;j<8;j++){ if(isValidMove(r,c,i,j)) moves.push([i,j]); } } return moves; }
+
+// IA
+function aiMove(){
+  if(gameOver) return;
+  const moves=[];
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      const p=boardState[i][j];
+      if(p && getColor(p)==="black"){
+        const ms=getMoves(i,j);
+        ms.forEach(mv=>moves.push({from:[i,j],to:mv}));
+      }
+    }
+  }
+  if(moves.length===0){ showVictory("white"); return; }
+
+  let bestMoves = moves.filter(mv=>{
+    const t=boardState[mv.to[0]][mv.to[1]];
+    return t && getColor(t)==="white";
+  });
+  if(bestMoves.length===0){
+    bestMoves = moves.filter(mv=>boardState[mv.from[0]][mv.from[1]]==="♟" && mv.to[0]>mv.from[0]);
+  }
+  if(bestMoves.length===0) bestMoves = moves;
+
+  const choice=bestMoves[Math.floor(Math.random()*bestMoves.length)];
+  movePiece(choice.from[0],choice.from[1],choice.to[0],choice.to[1]);
+  currentPlayer="white";
+  turnText.textContent="Vez das brancas ⚪";
+}
+
+// Vitória
+function showVictory(winner){
+  gameOver=true;
+  let text=winner==="white"?"Você venceu! 🏆":"IA venceu! 😢";
+  if(winner==="white"){
+    players[user].elo +=50;
+    players[user].coins +=10;
+    localStorage.setItem("players",JSON.stringify(players));
+    text+=` +50 ELO, +10 moedas`;
+  }
+  victoryModal.innerHTML=`<h2>${text}</h2>
+  <button onclick="restartGame()">Jogar de novo</button>
+  <button onclick="exitGame()">Sair</button>`;
+  victoryModal.style.display="block";
+}
+function restartGame(){
+  victoryModal.style.display="none";
+  boardState=JSON.parse(JSON.stringify(initialBoard));
+  lastMove=null;
+  currentPlayer="white";
+  gameOver=false;
+  turnText.textContent="Vez das brancas ⚪";
+  renderBoard();
+}
+function exitGame(){ window.location.href="menu.html"; }
+
+restartBtn.onclick=restartGame;
+
+renderBoard();
+</script>
+</body>
+</html>

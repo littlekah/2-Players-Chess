@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Ult - Menu</title>
+<style>
+  body {
+    font-family: "Poppins", sans-serif;
+    background: linear-gradient(180deg, #0d0d0d, #1a1a1a);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  h1 { margin-top: 20px; font-size: 2.2em; color: #00ff99; }
+  .stats {
+    background: #111;
+    padding: 10px 20px;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  button {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 25px;
+    font-size: 1em;
+    color: white;
+    margin: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover { transform: scale(1.08); background: linear-gradient(90deg, #00aaff, #0077cc); }
+  #devMsg {
+    color: #ffcc00;
+    margin-top: 10px;
+    display: none;
+    animation: fade 0.5s ease-in-out;
+  }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .menu-box {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .leaderboard, .shop {
+    background: #141414;
+    border-radius: 15px;
+    padding: 20px;
+    width: 300px;
+    margin-top: 20px;
+  }
+  .leaderboard h2, .shop h2 { text-align: center; color: #00ffcc; }
+  .player-entry {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #333;
+    padding: 5px 0;
+  }
+  .item {
+    background: #1e1e1e;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 8px 0;
+  }
+  .item button {
+    background: linear-gradient(90deg, #28a745, #218838);
+    margin-top: 5px;
+  }
+</style>
+</head>
+<body>
+
+<h1>♟️ Chess Ult</h1>
+
+<div class="stats">
+  <span id="username"></span> | 🪙 <span id="coins"></span> | 🧩 ELO: <span id="elo"></span>
+</div>
+
+<div class="menu-box">
+  <button onclick="playOnline()">🌐 Jogar Online</button>
+  <p id="devMsg">🔧 Modo em desenvolvimento...</p>
+
+  <button onclick="window.location.href='iachess.html'">🤖 Jogar com a IA</button>
+  <button onclick="window.location.href='localchess.html'">👬 Jogar com um amigo</button>
+  <button onclick="window.location.href='tutorialchess.html'">📘 Ir ao Tutorial</button> <!-- botão adicionado -->
+</div>
+
+<div class="shop">
+  <h2>🛒 Loja</h2>
+  <div id="shopItems"></div>
+</div>
+
+<div class="leaderboard">
+  <h2>🏆 Leaderboard Global</h2>
+  <div id="leaderboardList"></div>
+</div>
+
+<script>
+const user = localStorage.getItem("currentUser");
+if (!user) window.location.href = "index.html";
+
+let players = JSON.parse(localStorage.getItem("players")) || {};
+let current = players[user];
+
+// Mostrar dados
+document.getElementById("username").textContent = user;
+document.getElementById("coins").textContent = current.coins;
+document.getElementById("elo").textContent = current.elo;
+
+// Loja de Itens
+const shopData = [
+  { name: "Pacote Canhão 💣", price: 1500, id: "cannon" },
+  { name: "EVO Torre 🧱", price: 1000, id: "towerEvo" },
+  { name: "EVO Bispo 🔮", price: 1000, id: "bishopEvo" },
+  { name: "Skin Dourada ✨", price: 800, id: "goldSkin" }
+];
+
+const shopContainer = document.getElementById("shopItems");
+shopData.forEach(item => {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `
+    <strong>${item.name}</strong><br>
+    💰 ${item.price} moedas<br>
+    <button onclick="buyItem('${item.id}', ${item.price})">Comprar</button>
+  `;
+  shopContainer.appendChild(div);
+});
+
+function buyItem(id, price) {
+  if (current.coins < price) return alert("Moedas insuficientes!");
+  if (current.inventory.includes(id)) return alert("Você já possui este item!");
+
+  current.coins -= price;
+  current.inventory.push(id);
+  players[user] = current;
+  localStorage.setItem("players", JSON.stringify(players));
+
+  document.getElementById("coins").textContent = current.coins;
+  alert("Item comprado com sucesso! 🎉");
+}
+
+// Leaderboard (Top 50)
+function updateLeaderboard() {
+  const lb = Object.entries(players)
+    .map(([name, data]) => ({ name, elo: data.elo }))
+    .sort((a, b) => b.elo - a.elo)
+    .slice(0, 50);
+
+  const lbContainer = document.getElementById("leaderboardList");
+  lbContainer.innerHTML = "";
+
+  lb.forEach((p, i) => {
+    const div = document.createElement("div");
+    div.className = "player-entry";
+    div.innerHTML = `<span>${i + 1}. ${p.name}</span><span>${p.elo}</span>`;
+    lbContainer.appendChild(div);
+  });
+}
+updateLeaderboard();
+
+function playOnline() {
+  const msg = document.getElementById("devMsg");
+  msg.style.display = "block";
+  setTimeout(() => msg.style.display = "none", 2500);
+}
+</script>
+
+</body>
+</html>

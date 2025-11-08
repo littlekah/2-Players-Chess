@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Tutorial</title>
+<style>
+body {
+  background-color: #1b1b1b;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 20px;
+}
+h1 { color: #00ff99; margin-bottom: 10px; }
+#board {
+  display: grid;
+  grid-template-columns: repeat(8, 60px);
+  grid-template-rows: repeat(8, 60px);
+  gap: 0;
+  border: 2px solid #00ff99;
+}
+.square {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+.light { background-color: #f0f0d0; }
+.dark { background-color: #3a5f0b; }
+.highlight { outline: 3px solid #00ffcc; }
+.possible-move {
+  background-color: rgba(255, 255, 0, 0.7);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse {
+  0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.6; }
+  50% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.6; }
+}
+#instructions {
+  max-width: 500px;
+  margin-top: 20px;
+  background-color: #222;
+  padding: 15px;
+  border-radius: 10px;
+  border: 2px solid #00ff99;
+}
+#instructions h2 { color: #00ffcc; margin-top: 0; }
+#instructions ul { padding-left: 20px; }
+#nextBtn {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: #00ff99;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #1b1b1b;
+  font-weight: bold;
+}
+#nextBtn:hover { background-color: #00cc77; }
+</style>
+</head>
+<body>
+
+<h1>♟️ Chess Tutorial</h1>
+<div id="board"></div>
+
+<div id="instructions">
+  <h2>Como jogar:</h2>
+  <div id="stepContent">
+    <p>Passo 1: Clique em uma peça branca para ver seus movimentos possíveis.</p>
+  </div>
+  <button id="nextBtn">Próximo</button>
+</div>
+
+<script>
+const board = document.getElementById("board");
+const stepContent = document.getElementById("stepContent");
+const nextBtn = document.getElementById("nextBtn");
+
+const initialBoard = [
+  ["♜","♞","♝","♛","♚","♝","♞","♜"],
+  ["♟","♟","♟","♟","♟","♟","♟","♟"],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["","","","","","","",""],
+  ["♙","♙","♙","♙","♙","♙","♙","♙"],
+  ["♖","♘","♗","♕","♔","♗","♘","♖"]
+];
+
+let boardState = JSON.parse(JSON.stringify(initialBoard));
+let selected = null;
+let currentPlayer = "white";
+
+function getColor(piece) {
+  if(!piece) return null;
+  return "♙♖♘♗♕♔".includes(piece)?"white":"black";
+}
+
+function renderBoard() {
+  board.innerHTML = "";
+  for(let i=0;i<8;i++) {
+    for(let j=0;j<8;j++) {
+      const square = document.createElement("div");
+      square.classList.add("square", (i+j)%2===0?"light":"dark");
+      square.dataset.row = i;
+      square.dataset.col = j;
+      const piece = boardState[i][j];
+      if(piece) {
+        const span = document.createElement("span");
+        span.textContent = piece;
+        square.appendChild(span);
+      }
+      square.onclick = () => handleClick(i,j);
+      board.appendChild(square);
+    }
+  }
+}
+
+function handleClick(r,c){
+  const piece = boardState[r][c];
+  if(selected) {
+    const [sr,sc] = selected;
+    if(isValidMove(sr,sc,r,c)) {
+      boardState[r][c] = boardState[sr][sc];
+      boardState[sr][sc] = "";
+      selected = null;
+      currentPlayer = currentPlayer==="white"?"black":"white";
+      renderBoard();
+      return;
+    }
+    selected = null;
+    renderBoard();
+    return;
+  }
+  if(piece && getColor(piece)===currentPlayer){
+    selected = [r,c];
+    document.querySelectorAll(".square").forEach(sq => sq.classList.remove("highlight"));
+    const moves = getMoves(r,c);
+    moves.forEach(m => {
+      const sq = board.children[m[0]*8 + m[1]];
+      const dot = document.createElement("div");
+      dot.classList.add("possible-move");
+      sq.appendChild(dot);
+    });
+  }
+}
+
+function isValidMove(sr,sc,tr,tc){
+  if(sr===tr && sc===tc) return false;
+  const piece = boardState[sr][sc];
+  const target = boardState[tr][tc];
+  const pieceColor = getColor(piece);
+  const targetColor = getColor(target);
+  if(targetColor===pieceColor) return false;
+  const dr = tr-sr, dc = tc-sc;
+  switch(piece){
+    case"♙": if(dc===0 && !target && ((dr===-1)||(dr===-2 && sr===6&&!boardState[sr-1][sc]))) return true;
+             if(Math.abs(dc)===1 && dr===-1 && targetColor==="black") return true; break;
+    case"♟": if(dc===0 && !target && ((dr===1)||(dr===2 && sr===1&&!boardState[sr+1][sc]))) return true;
+             if(Math.abs(dc)===1 && dr===1 && targetColor==="white") return true; break;
+    case"♖": case"♜": if(sr===tr||sc===tc) return clearPath(sr,sc,tr,tc); break;
+    case"♗": case"♝": if(Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♕": case"♛": if(sr===tr||sc===tc||Math.abs(dr)===Math.abs(dc)) return clearPath(sr,sc,tr,tc); break;
+    case"♘": case"♞": if((Math.abs(dr)===2&&Math.abs(dc)===1)||(Math.abs(dr)===1&&Math.abs(dc)===2)) return true; break;
+    case"♔": case"♚": if(Math.abs(dr)<=1 && Math.abs(dc)<=1) return true; break;
+  }
+  return false;
+}
+
+function clearPath(sr,sc,tr,tc){
+  const stepR = Math.sign(tr-sr), stepC = Math.sign(tc-sc);
+  let r = sr + stepR, c = sc + stepC;
+  while(r !== tr || c !== tc){
+    if(boardState[r][c]) return false;
+    r+=stepR; c+=stepC;
+  }
+  return true;
+}
+
+function getMoves(r,c){
+  const moves=[];
+  for(let i=0;i<8;i++){
+    for(let j=0;j<8;j++){
+      if(isValidMove(r,c,i,j)) moves.push([i,j]);
+    }
+  }
+  return moves;
+}
+
+renderBoard();
+
+// Tutorial Steps
+const steps = [
+  "Passo 1: Clique em uma peça branca para ver seus movimentos possíveis.",
+  "Passo 2: Peões se movem para frente e capturam diagonalmente.",
+  "Passo 3: Torres se movem em linha reta qualquer direção sem pular peças.",
+  "Passo 4: Bispos se movem em diagonal.",
+  "Passo 5: Cavalos se movem em 'L' e podem pular peças.",
+  "Passo 6: Rainhas combinam movimentos de torre e bispo.",
+  "Passo 7: Rei se move 1 casa qualquer direção.",
+  "Passo 8: Objetivo do jogo: dar xeque-mate no rei adversário."
+];
+let currentStep = 0;
+nextBtn.onclick = () => {
+  currentStep++;
+  if(currentStep>=steps.length) {
+    stepContent.innerHTML = "<p>Tutorial concluído! Pratique jogando contra a IA ou amigos. 🎉</p>";
+    nextBtn.style.display="none";
+  } else {
+    stepContent.innerHTML = `<p>${steps[currentStep]}</p>`;
+  }
+};
+</script>
+
+</body>
+</html>
