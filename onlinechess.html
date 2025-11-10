@@ -471,6 +471,29 @@
 
 <div id="victoryModal"></div>
 
+ <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+const socket = io("http://localhost:3000"); // depois muda pro link hospedado
+
+socket.on("inicio", (data) => {
+  console.log("Começou a partida! Você joga com as", data.cor);
+  // tu pode chamar aqui uma função tipo startGame(data.cor)
+});
+
+socket.on("esperando", (msg) => {
+  console.log(msg);
+});
+
+socket.on("movimento", (data) => {
+  moverPeca(data.origem, data.destino); // tua função já existente
+});
+
+// quando jogador mover peça:
+function enviarMovimento(origem, destino) {
+  socket.emit("movimento", { origem, destino });
+}
+</script>
+
 <script>
 // Configuração do WebSocket (usando servidor local)
 const WS_URL = window.location.protocol === 'https:' 
